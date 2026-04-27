@@ -12,32 +12,16 @@ Base URL: `http://localhost:3001/api/auth`
 
 ### POST `/api/auth/register`
 
-Register a new `mahasiswa` or `mitra` account.
+Register a new `client` or `freelancer` account.
 
-Example request for `mahasiswa`:
+Example request:
 
 ```json
 {
   "name": "Budi Santoso",
   "email": "budi@example.com",
   "password": "password123",
-  "role": "mahasiswa",
-  "nim": "21120122130001",
-  "university": "Universitas Diponegoro",
-  "major": "Informatika"
-}
-```
-
-Example request for `mitra`:
-
-```json
-{
-  "name": "Siti Rahma",
-  "email": "siti@mitra.co.id",
-  "password": "password123",
-  "role": "mitra",
-  "organizationName": "PT Mitra Inovasi",
-  "organizationType": "Perusahaan"
+  "role": "client"
 }
 ```
 
@@ -46,9 +30,7 @@ Validation:
 - `name` is required.
 - `email` must be a valid email.
 - `password` must be at least 8 characters.
-- `role` must be `mahasiswa` or `mitra`.
-- `mahasiswa` must provide `nim`, `university`, and `major`.
-- `mitra` must provide `organizationName` and `organizationType`.
+- `role` is optional, default is `client`. Can be `client`, `freelancer`, or `admin`.
 
 Response `201 Created`:
 
@@ -61,16 +43,10 @@ Response `201 Created`:
       "id": "uuid",
       "name": "Budi Santoso",
       "email": "budi@example.com",
-      "role": "mahasiswa",
+      "role": "client",
       "is_active": true,
       "createdAt": "2024-01-01T00:00:00.000Z",
-      "updatedAt": "2024-01-01T00:00:00.000Z",
-      "profile": {
-        "type": "mahasiswa",
-        "nim": "21120122130001",
-        "university": "Universitas Diponegoro",
-        "major": "Informatika"
-      }
+      "updatedAt": "2024-01-01T00:00:00.000Z"
     }
   }
 }
@@ -100,16 +76,10 @@ Response `200 OK`:
       "id": "uuid",
       "name": "Budi Santoso",
       "email": "budi@example.com",
-      "role": "mahasiswa",
+      "role": "client",
       "is_active": true,
       "createdAt": "2024-01-01T00:00:00.000Z",
-      "updatedAt": "2024-01-01T00:00:00.000Z",
-      "profile": {
-        "type": "mahasiswa",
-        "nim": "21120122130001",
-        "university": "Universitas Diponegoro",
-        "major": "Informatika"
-      }
+      "updatedAt": "2024-01-01T00:00:00.000Z"
     }
   }
 }
@@ -155,7 +125,7 @@ Headers:
 Authorization: Bearer <access_token>
 ```
 
-Response `200 OK` for `mitra`:
+Response `200 OK`:
 
 ```json
 {
@@ -164,17 +134,12 @@ Response `200 OK` for `mitra`:
   "data": {
     "user": {
       "id": "uuid",
-      "name": "Siti Rahma",
-      "email": "siti@mitra.co.id",
-      "role": "mitra",
+      "name": "Budi Santoso",
+      "email": "budi@example.com",
+      "role": "client",
       "is_active": true,
       "createdAt": "2024-01-01T00:00:00.000Z",
-      "updatedAt": "2024-01-01T00:00:00.000Z",
-      "profile": {
-        "type": "mitra",
-        "organizationName": "PT Mitra Inovasi",
-        "organizationType": "Perusahaan"
-      }
+      "updatedAt": "2024-01-01T00:00:00.000Z"
     }
   }
 }
@@ -190,33 +155,24 @@ Headers:
 Authorization: Bearer <access_token>
 ```
 
-Example request for `mahasiswa`:
+Example request:
 
 ```json
 {
   "name": "Budi Santoso Updated",
-  "major": "Sistem Informasi"
-}
-```
-
-Example request for `mitra`:
-
-```json
-{
-  "organizationType": "Startup"
+  "password": "newpassword123"
 }
 ```
 
 Notes:
 
-- `password` is optional and still supported.
+- `name` and `password` are optional.
 - Role cannot be changed through this endpoint.
-- Required role-specific profile fields must remain filled after update.
 
 ## User Roles
 
 | Role | Description |
 |------|-------------|
-| `mahasiswa` | Student profile with `nim`, `university`, and `major` |
-| `mitra` | Partner profile with `organizationName` and `organizationType` |
+| `client` | Standard user seeking services |
+| `freelancer` | User providing services |
 | `admin` | Reserved for platform administrator |

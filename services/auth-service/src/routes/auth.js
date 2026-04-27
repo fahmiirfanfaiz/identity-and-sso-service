@@ -27,13 +27,9 @@ const registerValidation = [
     .isLength({ min: 8 })
     .withMessage('Password must be at least 8 characters'),
   body('role')
-    .isIn(['mahasiswa', 'mitra'])
-    .withMessage('Role must be mahasiswa or mitra'),
-  body('nim').optional().trim(),
-  body('university').optional().trim(),
-  body('major').optional().trim(),
-  body('organizationName').optional().trim(),
-  body('organizationType').optional().trim(),
+    .optional()
+    .isIn(['client', 'freelancer', 'admin'])
+    .withMessage('Role must be client, freelancer, or admin'),
 ];
 
 const loginValidation = [
@@ -47,11 +43,6 @@ const updateProfileValidation = [
     .optional()
     .isLength({ min: 8 })
     .withMessage('Password must be at least 8 characters'),
-  body('nim').optional().trim(),
-  body('university').optional().trim(),
-  body('major').optional().trim(),
-  body('organizationName').optional().trim(),
-  body('organizationType').optional().trim(),
 ];
 
 // ─── Routes ─────────────────────────────────

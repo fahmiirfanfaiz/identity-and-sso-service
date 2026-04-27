@@ -40,29 +40,9 @@ module.exports = (sequelize, DataTypes) => {
         },
       },
       role: {
-        type: DataTypes.ENUM('mahasiswa', 'mitra', 'admin'),
+        type: DataTypes.ENUM('client', 'freelancer', 'admin'),
         allowNull: false,
-        defaultValue: 'mahasiswa',
-      },
-      nim: {
-        type: DataTypes.STRING,
-        allowNull: true,
-      },
-      university: {
-        type: DataTypes.STRING,
-        allowNull: true,
-      },
-      major: {
-        type: DataTypes.STRING,
-        allowNull: true,
-      },
-      organization_name: {
-        type: DataTypes.STRING,
-        allowNull: true,
-      },
-      organization_type: {
-        type: DataTypes.STRING,
-        allowNull: true,
+        defaultValue: 'client',
       },
       is_active: {
         type: DataTypes.BOOLEAN,
