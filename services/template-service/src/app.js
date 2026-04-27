@@ -39,6 +39,11 @@ app.get('/health', (req, res) => {
 // ─── API Routes ──────────────────────────────
 app.use('/api', routes);
 
+// ─── [MOCK] Internal Routes (service-to-service) ──
+// TODO: Hapus ini saat auth-service dari Nabil sudah live
+const mockInternalRoutes = require('./routes/mock/internal');
+app.use('/internal', mockInternalRoutes);
+
 // ─── Error Handling ──────────────────────────
 app.use(notFoundHandler);
 app.use(errorHandler);
