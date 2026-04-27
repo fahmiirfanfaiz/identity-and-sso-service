@@ -6,8 +6,15 @@
 
 const { validationResult } = require('express-validator');
 const { User, RefreshToken } = require('../models');
-const { generateAccessToken, generateRefreshToken, verifyRefreshToken } = require('../utils/jwt');
+const {
+  generateAccessToken,
+  generateRefreshToken,
+  verifyRefreshToken,
+} = require('../utils/jwt');
 const config = require('../config');
+
+const STUDENT_ROLE = 'mahasiswa';
+const PARTNER_ROLE = 'mitra';
 
 // ─── Helper: parse expires string to ms ──────
 const parseExpiresToMs = (expiresIn) => {
@@ -20,6 +27,143 @@ const parseExpiresToMs = (expiresIn) => {
 // ─── Helper: format validation errors ────────
 const formatValidationErrors = (errors) =>
   errors.array().map((e) => ({ field: e.path, message: e.msg }));
+
+const normalizeOptionalString = (value) => {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+};
+
+const resolveBodyValue = (body, key, fallbackValue = null) =>
+  Object.prototype.hasOwnProperty.call(body, key) ? body[key] : fallbackValue;
+
+const buildRoleSpecificErrors = (body, role) => {
+  const errors = [];
+
+  if (role === STUDENT_ROLE) {
+    if (!normalizeOptionalString(body.nim)) {
+      errors.push({ field: 'nim', message: 'NIM is required for mahasiswa' });
+    }
+
+    if (!normalizeOptionalString(body.university)) {
+      errors.push({
+        field: 'university',
+        message: 'University is required for mahasiswa',
+      });
+    }
+
+    if (!normalizeOptionalString(body.major)) {
+      errors.push({ field: 'major', message: 'Major is required for mahasiswa' });
+    }
+  }
+
+  if (role === PARTNER_ROLE) {
+    if (!normalizeOptionalString(body.organizationName)) {
+      errors.push({
+        field: 'organizationName',
+        message: 'Organization name is required for mitra',
+      });
+    }
+
+    if (!normalizeOptionalString(body.organizationType)) {
+      errors.push({
+        field: 'organizationType',
+        message: 'Organization type is required for mitra',
+      });
+    }
+  }
+
+  return errors;
+};
+
+const getMergedRoleSpecificPayload = (user, body) => {
+  if (user.role === STUDENT_ROLE) {
+    return {
+      nim: resolveBodyValue(body, 'nim', user.nim),
+      university: resolveBodyValue(body, 'university', user.university),
+      major: resolveBodyValue(body, 'major', user.major),
+    };
+  }
+
+  if (user.role === PARTNER_ROLE) {
+    return {
+      organizationName: resolveBodyValue(body, 'organizationName', user.organization_name),
+      organizationType: resolveBodyValue(body, 'organizationType', user.organization_type),
+    };
+  }
+
+  return {};
+};
+
+const getRoleSpecificAttributes = (role, body, currentUser = null) => {
+  if (role === STUDENT_ROLE) {
+    return {
+      nim: normalizeOptionalString(resolveBodyValue(body, 'nim', currentUser && currentUser.nim)),
+      university: normalizeOptionalString(
+        resolveBodyValue(body, 'university', currentUser && currentUser.university)
+      ),
+      major: normalizeOptionalString(resolveBodyValue(body, 'major', currentUser && currentUser.major)),
+      organization_name: null,
+      organization_type: null,
+    };
+  }
+
+  if (role === PARTNER_ROLE) {
+    return {
+      nim: null,
+      university: null,
+      major: null,
+      organization_name: normalizeOptionalString(
+        resolveBodyValue(body, 'organizationName', currentUser && currentUser.organization_name)
+      ),
+      organization_type: normalizeOptionalString(
+        resolveBodyValue(body, 'organizationType', currentUser && currentUser.organization_type)
+      ),
+    };
+  }
+
+  return {};
+};
+
+const serializeUser = (user) => {
+  const baseUser = {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    is_active: user.is_active,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+  };
+
+  if (user.role === STUDENT_ROLE) {
+    return {
+      ...baseUser,
+      profile: {
+        type: STUDENT_ROLE,
+        nim: user.nim,
+        university: user.university,
+        major: user.major,
+      },
+    };
+  }
+
+  if (user.role === PARTNER_ROLE) {
+    return {
+      ...baseUser,
+      profile: {
+        type: PARTNER_ROLE,
+        organizationName: user.organization_name,
+        organizationType: user.organization_type,
+      },
+    };
+  }
+
+  return baseUser;
+};
 
 /**
  * POST /api/auth/register
@@ -35,7 +179,16 @@ const register = async (req, res, next) => {
       });
     }
 
-    const { name, email, password } = req.body;
+    const { name, email, password, role } = req.body;
+    const roleErrors = buildRoleSpecificErrors(req.body, role);
+
+    if (roleErrors.length > 0) {
+      return res.status(422).json({
+        success: false,
+        message: 'Validation failed',
+        errors: roleErrors,
+      });
+    }
 
     // Check duplicate email
     const existing = await User.unscoped().findOne({ where: { email } });
@@ -47,12 +200,18 @@ const register = async (req, res, next) => {
     }
 
     // Create user (password hashed via model hook)
-    const user = await User.create({ name, email, password });
+    const user = await User.create({
+      name,
+      email,
+      password,
+      role,
+      ...getRoleSpecificAttributes(role, req.body),
+    });
 
     return res.status(201).json({
       success: true,
       message: 'User registered successfully',
-      data: { user },
+      data: { user: serializeUser(user) },
     });
   } catch (error) {
     next(error);
@@ -112,7 +271,7 @@ const login = async (req, res, next) => {
     return res.status(200).json({
       success: true,
       message: 'Login successful',
-      data: { accessToken, refreshToken, user: safeUser },
+      data: { accessToken, refreshToken, user: serializeUser(safeUser) },
     });
   } catch (error) {
     next(error);
@@ -223,7 +382,7 @@ const getProfile = async (req, res, next) => {
     return res.status(200).json({
       success: true,
       message: 'Profile retrieved successfully',
-      data: { user },
+      data: { user: serializeUser(user) },
     });
   } catch (error) {
     next(error);
@@ -253,10 +412,24 @@ const updateProfile = async (req, res, next) => {
       });
     }
 
+    const roleErrors = buildRoleSpecificErrors(
+      getMergedRoleSpecificPayload(user, req.body),
+      user.role
+    );
+    if (roleErrors.length > 0) {
+      return res.status(422).json({
+        success: false,
+        message: 'Validation failed',
+        errors: roleErrors,
+      });
+    }
+
     const { name, password } = req.body;
 
     if (name) user.name = name;
     if (password) user.password = password; // hook will hash it
+
+    Object.assign(user, getRoleSpecificAttributes(user.role, req.body, user));
 
     await user.save();
 
@@ -265,7 +438,7 @@ const updateProfile = async (req, res, next) => {
     return res.status(200).json({
       success: true,
       message: 'Profile updated successfully',
-      data: { user: updatedUser },
+      data: { user: serializeUser(updatedUser) },
     });
   } catch (error) {
     next(error);

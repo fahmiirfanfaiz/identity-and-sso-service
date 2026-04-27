@@ -1,8 +1,6 @@
-# Auth Service — API Endpoints
+# Auth Service - API Endpoints
 
 Base URL: `http://localhost:3001/api/auth`
-
----
 
 ## Health Check
 
@@ -10,39 +8,50 @@ Base URL: `http://localhost:3001/api/auth`
 |--------|------|:-------------:|-------------|
 | GET | `/health` | No | Service health status |
 
-**Response 200:**
-```json
-{
-  "success": true,
-  "status": "ok",
-  "service": "auth-service",
-  "uptime": 12.345,
-  "timestamp": "2024-01-01T00:00:00.000Z"
-}
-```
-
----
-
 ## Authentication Endpoints
 
 ### POST `/api/auth/register`
-Register a new user account.
 
-**Request Body:**
+Register a new `mahasiswa` or `mitra` account.
+
+Example request for `mahasiswa`:
+
 ```json
 {
-  "name": "John Doe",
-  "email": "john@example.com",
-  "password": "password123"
+  "name": "Budi Santoso",
+  "email": "budi@example.com",
+  "password": "password123",
+  "role": "mahasiswa",
+  "nim": "21120122130001",
+  "university": "Universitas Diponegoro",
+  "major": "Informatika"
 }
 ```
 
-**Validation:**
-- `name` — required, non-empty
-- `email` — required, valid email format
-- `password` — required, minimum 8 characters
+Example request for `mitra`:
 
-**Response 201 Created:**
+```json
+{
+  "name": "Siti Rahma",
+  "email": "siti@mitra.co.id",
+  "password": "password123",
+  "role": "mitra",
+  "organizationName": "PT Mitra Inovasi",
+  "organizationType": "Perusahaan"
+}
+```
+
+Validation:
+
+- `name` is required.
+- `email` must be a valid email.
+- `password` must be at least 8 characters.
+- `role` must be `mahasiswa` or `mitra`.
+- `mahasiswa` must provide `nim`, `university`, and `major`.
+- `mitra` must provide `organizationName` and `organizationType`.
+
+Response `201 Created`:
+
 ```json
 {
   "success": true,
@@ -50,35 +59,36 @@ Register a new user account.
   "data": {
     "user": {
       "id": "uuid",
-      "name": "John Doe",
-      "email": "john@example.com",
-      "role": "client",
+      "name": "Budi Santoso",
+      "email": "budi@example.com",
+      "role": "mahasiswa",
       "is_active": true,
       "createdAt": "2024-01-01T00:00:00.000Z",
-      "updatedAt": "2024-01-01T00:00:00.000Z"
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "profile": {
+        "type": "mahasiswa",
+        "nim": "21120122130001",
+        "university": "Universitas Diponegoro",
+        "major": "Informatika"
+      }
     }
   }
 }
 ```
 
-**Error Responses:**
-- `409 Conflict` — Email already registered
-- `422 Unprocessable Entity` — Validation errors
-
----
-
 ### POST `/api/auth/login`
+
 Authenticate a user and obtain tokens.
 
-**Request Body:**
 ```json
 {
-  "email": "john@example.com",
+  "email": "budi@example.com",
   "password": "password123"
 }
 ```
 
-**Response 200 OK:**
+Response `200 OK`:
+
 ```json
 {
   "success": true,
@@ -88,88 +98,65 @@ Authenticate a user and obtain tokens.
     "refreshToken": "<jwt_refresh_token>",
     "user": {
       "id": "uuid",
-      "name": "John Doe",
-      "email": "john@example.com",
-      "role": "client",
-      "is_active": true
+      "name": "Budi Santoso",
+      "email": "budi@example.com",
+      "role": "mahasiswa",
+      "is_active": true,
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "profile": {
+        "type": "mahasiswa",
+        "nim": "21120122130001",
+        "university": "Universitas Diponegoro",
+        "major": "Informatika"
+      }
     }
   }
 }
 ```
 
-**Error Responses:**
-- `401 Unauthorized` — Invalid credentials or inactive account
-- `422 Unprocessable Entity` — Validation errors
-
----
-
 ### POST `/api/auth/refresh`
+
 Obtain a new access token using a valid refresh token.
 
-**Request Body:**
 ```json
 {
   "refreshToken": "<jwt_refresh_token>"
 }
 ```
 
-**Response 200 OK:**
-```json
-{
-  "success": true,
-  "message": "Access token refreshed",
-  "data": {
-    "accessToken": "<new_jwt_access_token>"
-  }
-}
-```
-
-**Error Responses:**
-- `400 Bad Request` — Refresh token not provided
-- `401 Unauthorized` — Invalid or expired refresh token
-
----
-
 ### POST `/api/auth/logout` 🔐
-Revoke the current refresh token. Requires authentication.
 
-**Headers:**
-```
+Revoke the current refresh token.
+
+Headers:
+
+```txt
 Authorization: Bearer <access_token>
 ```
 
-**Request Body:**
+Request body:
+
 ```json
 {
   "refreshToken": "<jwt_refresh_token>"
 }
 ```
-
-**Response 200 OK:**
-```json
-{
-  "success": true,
-  "message": "Logged out successfully"
-}
-```
-
-**Error Responses:**
-- `400 Bad Request` — Refresh token not provided
-- `401 Unauthorized` — Invalid or missing access token
-
----
 
 ## Profile Endpoints
 
 ### GET `/api/auth/profile` 🔐
+
 Retrieve the authenticated user's profile.
 
-**Headers:**
-```
+Headers:
+
+```txt
 Authorization: Bearer <access_token>
 ```
 
-**Response 200 OK:**
+Response `200 OK` for `mitra`:
+
 ```json
 {
   "success": true,
@@ -177,102 +164,59 @@ Authorization: Bearer <access_token>
   "data": {
     "user": {
       "id": "uuid",
-      "name": "John Doe",
-      "email": "john@example.com",
-      "role": "client",
+      "name": "Siti Rahma",
+      "email": "siti@mitra.co.id",
+      "role": "mitra",
       "is_active": true,
       "createdAt": "2024-01-01T00:00:00.000Z",
-      "updatedAt": "2024-01-01T00:00:00.000Z"
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "profile": {
+        "type": "mitra",
+        "organizationName": "PT Mitra Inovasi",
+        "organizationType": "Perusahaan"
+      }
     }
   }
 }
 ```
 
-**Error Responses:**
-- `401 Unauthorized` — Invalid or missing access token
-- `404 Not Found` — User not found
-
----
-
 ### PUT `/api/auth/profile` 🔐
-Update the authenticated user's name and/or password.
 
-**Headers:**
-```
+Update the authenticated user's profile.
+
+Headers:
+
+```txt
 Authorization: Bearer <access_token>
 ```
 
-**Request Body (all fields optional):**
+Example request for `mahasiswa`:
+
 ```json
 {
-  "name": "Jane Doe",
-  "password": "newpassword123"
+  "name": "Budi Santoso Updated",
+  "major": "Sistem Informasi"
 }
 ```
 
-**Validation:**
-- `name` — optional, non-empty
-- `password` — optional, minimum 8 characters
+Example request for `mitra`:
 
-**Response 200 OK:**
 ```json
 {
-  "success": true,
-  "message": "Profile updated successfully",
-  "data": {
-    "user": {
-      "id": "uuid",
-      "name": "Jane Doe",
-      "email": "john@example.com",
-      "role": "client",
-      "is_active": true
-    }
-  }
+  "organizationType": "Startup"
 }
 ```
 
-**Error Responses:**
-- `401 Unauthorized` — Invalid or missing access token
-- `404 Not Found` — User not found
-- `422 Unprocessable Entity` — Validation errors
+Notes:
 
----
-
-## Standard Response Formats
-
-### Success
-```json
-{
-  "success": true,
-  "message": "...",
-  "data": { ... }
-}
-```
-
-### Error
-```json
-{
-  "success": false,
-  "message": "...",
-  "errors": [ { "field": "email", "message": "Valid email is required" } ]
-}
-```
-
----
-
-## Token Info
-
-| Token | Expiry | Usage |
-|-------|--------|-------|
-| Access Token | 15 minutes | `Authorization: Bearer <token>` header |
-| Refresh Token | 7 days | Body of `/api/auth/refresh` and `/api/auth/logout` |
-
----
+- `password` is optional and still supported.
+- Role cannot be changed through this endpoint.
+- Required role-specific profile fields must remain filled after update.
 
 ## User Roles
 
 | Role | Description |
 |------|-------------|
-| `client` | Default role — posts project bids |
-| `freelancer` | Applies to project bids |
-| `admin` | Platform administrator |
+| `mahasiswa` | Student profile with `nim`, `university`, and `major` |
+| `mitra` | Partner profile with `organizationName` and `organizationType` |
+| `admin` | Reserved for platform administrator |
