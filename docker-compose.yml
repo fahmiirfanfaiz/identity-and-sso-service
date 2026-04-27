@@ -55,6 +55,35 @@ services:
     networks:
       - bidding-network
 
+  # ─── Auth Service ───────────────────────────
+  auth-service:
+    build:
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+      target: dev
+    container_name: bidding-auth-service
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: 3000
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres_password}
+      DB_NAME: auth_db
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-this}
+      JWT_ACCESS_EXPIRES: 15m
+      JWT_REFRESH_EXPIRES: 7d
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./services/auth-service/src:/app/src
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - bidding-network
+
 # ─── Volumes ──────────────────────────────────
 volumes:
   postgres_data:
