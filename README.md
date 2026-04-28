@@ -8,6 +8,40 @@ Repo ini berisi implementasi **auth-service** berbasis **Node.js (Express)** den
 
 ---
 
+## Gambaran Ekosistem & Stakeholder (Project-Hub)
+
+Bagian ini menambahkan konteks mengenai siapa saja stakeholder yang terlibat di ekosistem *Project-Hub*, bagaimana alur kerja antar modul, dan posisi **Kelompok 1 (Identity & SSO)** di dalam sistem.
+
+### Stakeholder yang Terlibat
+
+- **Mahasiswa**: Berperan sebagai pelaksana proyek yang mendaftar secara individu, membentuk tim secara otomatis berdasarkan kriteria tertentu, melakukan penawaran (*bidding*) pada proyek yang tersedia, dan melaporkan progres pengerjaan.
+- **Mitra (Industri/Perusahaan)**: Berperan sebagai penyedia proyek yang mengunggah deskripsi tugas atau tantangan bisnis yang perlu diselesaikan. Mereka juga memantau proses pengerjaan melalui sistem.
+- **Panitia/Dosen**: Berperan sebagai pengawas (*Auditor*) yang memberikan penilaian, mengelola pembentukan tim, serta menyebarkan pengumuman massal.
+- **System Admin/DevOps**: Tim delegasi yang memastikan infrastruktur Docker dan API Gateway berjalan lancar agar semua layanan bisa saling berkomunikasi.
+
+### Alur Kerja Ekosistem (Project-Hub)
+
+Secara garis besar, ekosistem ini bekerja dalam satu siklus terintegrasi:
+
+1. **Inisiasi**: Mitra mengunggah proyek di **Modul Lelang (Kelompok 2)**.
+2. **Matching**: Mahasiswa masuk ke dalam pool dan dikelompokkan oleh **Modul Matchmaker (Kelompok 3)**.
+3. **Bidding**: Tim mahasiswa mengajukan diri untuk mengerjakan proyek mitra.
+4. **Monitoring**: Selama pengerjaan, progres dicatat dan dinilai di **Modul Tracker (Kelompok 4)**.
+5. **Automation**: Setiap ada perubahan status (misal: tim diterima), **Modul Communication (Kelompok 5)** akan otomatis mengirim notifikasi dan membuat dokumen PDF.
+
+### Hubungan dengan Modul Kelompok 1 (Identity & SSO)
+
+Kelompok 1 bertindak sebagai **"The Gatekeeper"** atau pondasi keamanan bagi seluruh stakeholder di atas. Perannya sangat krusial karena:
+
+- **Pintu Masuk Terpusat**: Sebelum Mahasiswa, Mitra, atau Panitia bisa berinteraksi dengan modul lelang atau monitoring, mereka harus divalidasi oleh sistem SSO (Single Sign-On) milik Kelompok 1.
+- **Manajemen Hak Akses**: Kelompok 1 yang menentukan identitas pengguna. Misalnya, memastikan hanya akun berstatus "Panitia" yang bisa menginput nilai di Modul Kelompok 4, sementara "Mahasiswa" hanya bisa melihat profil.
+- **Validasi Keamanan Data**: Dengan arsitektur berlapis (*Layered Architecture*), Kelompok 1 memastikan data sensitif seperti profil mahasiswa dari sistem kampus tetap terlindungi saat digunakan oleh layanan lain.
+- **Pusat Informasi Sesi**: Melalui penggunaan Redis, Kelompok 1 menyediakan informasi apakah seorang pengguna masih aktif login atau tidak kepada modul-modul lainnya secara cepat.
+
+Tanpa Kelompok 1, sistem microservices ini tidak akan memiliki identitas yang jelas, sehingga transaksi data antar kelompok menjadi tidak aman dan tidak terverifikasi.
+
+---
+
 ## Ringkasan Tanggung Jawab (Kelompok 1 — The Gatekeeper)
 
 - Autentikasi user (role yang tersedia: `client`, `freelancer`, `admin`).
