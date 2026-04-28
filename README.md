@@ -196,7 +196,7 @@ Lihat bagian **"Status Saat Ini: MOCK MODE"** di `INTEGRATION_GUIDE.md` untuk da
 - [x] Dockerfile & Docker Compose (`services/auth-service/Dockerfile`, `docker-compose.yml`)
 - [x] Dokumentasi integrasi antar service (`INTEGRATION_GUIDE.md`)
 - [ ] Dokumentasi API (Swagger / Postman) — *belum ada di repo, dapat ditambahkan*
-- [ ] Diagram arsitektur — *belum ada di repo, dapat ditambahkan*
+- [x] Diagram arsitektur — [`docs/architecture/README.md`](docs/architecture/README.md)
 - [ ] Tracking progress (Trello) — di luar repo
 
 ---
