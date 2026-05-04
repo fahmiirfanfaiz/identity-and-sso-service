@@ -1,31 +1,30 @@
-module.exports = [
+const js = require("@eslint/js");
+const globals = require("globals");
+const tseslint = require("typescript-eslint");
+
+module.exports = tseslint.config(
   {
-    ignores: ['node_modules/**'],
+    ignores: ["dist/**", "node_modules/**"],
   },
+  js.configs.recommended,
+  ...tseslint.configs.recommended,
   {
-    files: ['src/**/*.js'],
+    files: ["src/**/*.ts"],
     languageOptions: {
       ecmaVersion: 2022,
-      sourceType: 'commonjs',
+      sourceType: "module",
       globals: {
-        console: 'readonly',
-        module: 'readonly',
-        process: 'readonly',
-        require: 'readonly',
-        __dirname: 'readonly',
-        __filename: 'readonly',
-        setTimeout: 'readonly',
+        ...globals.node,
       },
     },
     rules: {
-      'no-undef': 'error',
-      'no-unused-vars': [
-        'warn',
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
         {
-          argsIgnorePattern: '^_|^Sequelize$',
-          caughtErrorsIgnorePattern: '^_|^error$',
+          argsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
         },
       ],
     },
   },
-];
+);
