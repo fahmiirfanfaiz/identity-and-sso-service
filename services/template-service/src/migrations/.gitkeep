@@ -1,2 +1,0 @@
-# This directory contains database migrations.
-# Create migrations with: npx sequelize-cli migration:generate --name migration-name
