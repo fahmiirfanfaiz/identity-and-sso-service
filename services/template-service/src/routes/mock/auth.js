@@ -15,17 +15,17 @@ const router = Router();
 const MOCK_USERS = [
   {
     id: 'mock-uuid-0001',
-    name: 'Alice Client',
-    email: 'client@mock.dev',
-    role: 'client',
+    name: 'Alice Mahasiswa',
+    email: 'mahasiswa@mock.dev',
+    role: 'mahasiswa',
     is_active: true,
     created_at: '2025-01-01T00:00:00.000Z',
   },
   {
     id: 'mock-uuid-0002',
-    name: 'Bob Freelancer',
-    email: 'freelancer@mock.dev',
-    role: 'freelancer',
+    name: 'Bob Mitra',
+    email: 'mitra@mock.dev',
+    role: 'mitra',
     is_active: true,
     created_at: '2025-01-01T00:00:00.000Z',
   },
@@ -41,7 +41,7 @@ const MOCK_USERS = [
 
 // Fake JWT-like tokens (bukan JWT asli, hanya placeholder)
 const MOCK_ACCESS_TOKEN =
-  'mock.eyJpZCI6Im1vY2stdXVpZC0wMDAxIiwiZW1haWwiOiJjbGllbnRAbW9jay5kZXYiLCJyb2xlIjoiY2xpZW50In0.mock_signature';
+  'mock.eyJpZCI6Im1vY2stdXVpZC0wMDAxIiwiZW1haWwiOiJtYWhhc2lzd2FAbW9jay5kZXYiLCJyb2xlIjoibWFoYXNpc3dhIn0.mock_signature';
 const MOCK_REFRESH_TOKEN =
   'mock_refresh.eyJpZCI6Im1vY2stdXVpZC0wMDAxIn0.mock_refresh_signature';
 
@@ -78,7 +78,7 @@ router.post('/register', (req, res) => {
         id: 'mock-uuid-' + Date.now(),
         name,
         email,
-        role: 'client',
+        role: 'mahasiswa',
         is_active: true,
         created_at: new Date().toISOString(),
       },
