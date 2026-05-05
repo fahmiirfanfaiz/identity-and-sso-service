@@ -15,6 +15,9 @@ export const config = {
     accessExpiresIn: process.env.JWT_ACCESS_EXPIRES ?? "15m",
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES ?? "7d",
   },
+  google: {
+    clientId: process.env.GOOGLE_CLIENT_ID ?? "",
+  },
   databaseUrl: process.env.DATABASE_URL ?? "",
   directUrl: process.env.DIRECT_URL ?? "",
 };

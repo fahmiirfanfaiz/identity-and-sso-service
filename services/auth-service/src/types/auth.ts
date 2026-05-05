@@ -17,3 +17,5 @@ export type SafeUser = {
   createdAt: Date;
   updatedAt: Date;
 };
+
+export type AppRole = JwtPayload["role"];

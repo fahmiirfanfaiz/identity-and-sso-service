@@ -122,7 +122,7 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     const { email, password } = req.body as { email: string; password: string };
     const user = await prisma.user.findUnique({ where: { email } });
 
-    if (!user || !user.isActive) {
+    if (!user || !user.isActive || !user.password) {
       return res.status(401).json({
         success: false,
         message: "Invalid credentials or account is inactive",
