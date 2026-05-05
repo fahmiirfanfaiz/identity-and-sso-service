@@ -1,29 +1,26 @@
 # ============================================
-# Template Service - Dockerfile
+# Auth Service - Dockerfile
 # ============================================
-# Multi-stage build: deps → dev → prod
-
-# ─── Stage: deps ──────────────────────────────
 FROM node:20-alpine AS deps
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --only=production && \
-    cp -R node_modules /prod_modules && \
-    npm ci
-
-# ─── Stage: dev (with nodemon hot-reload) ─────
+COPY prisma ./prisma
+RUN npm ci && \
+    npx prisma generate && \
+    npm prune --omit=dev && \
+    cp -R node_modules /prod_modules
 FROM node:20-alpine AS dev
 WORKDIR /app
+COPY --from=deps /prod_modules ./prod_modules
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 EXPOSE 3000
-CMD ["npm", "run", "dev"]
-
-# ─── Stage: prod ──────────────────────────────
+CMD ["sh", "-c", "npx prisma generate && npm run dev"]
 FROM node:20-alpine AS prod
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=deps /prod_modules ./node_modules
 COPY . .
+RUN npx prisma generate && npm run build
 EXPOSE 3000
 CMD ["npm", "start"]

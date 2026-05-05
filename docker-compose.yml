@@ -66,18 +66,16 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-development}
       PORT: 3000
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: ${POSTGRES_USER:-postgres}
-      DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres_password}
-      DB_NAME: auth_db
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres_password}@postgres:5432/auth_db?schema=public
+      DIRECT_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres_password}@postgres:5432/auth_db?schema=public
       JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-this}
       JWT_ACCESS_EXPIRES: 15m
       JWT_REFRESH_EXPIRES: 7d
     ports:
       - "3001:3000"
     volumes:
-      - ./services/auth-service/src:/app/src
+      - ./services/auth-service:/app
+      - /app/node_modules
     depends_on:
       postgres:
         condition: service_healthy
@@ -93,4 +91,3 @@ volumes:
 networks:
   bidding-network:
     driver: bridge
-
