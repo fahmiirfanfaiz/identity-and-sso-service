@@ -1,0 +1,277 @@
+{
+  "info": {
+    "name": "Identity & SSO - API Collection",
+    "description": "Postman collection untuk testing endpoint Identity & SSO Service berdasarkan docs/swagger.yml.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "description": "Login memakai akun uji dari environment Postman. Hasil response sebaiknya disimpan ke variabel accessToken dan refreshToken."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = (() => { try { return pm.response.json(); } catch(e) { return null; } })();",
+                  "pm.test('Response status is 200 or 201', function () { pm.expect(pm.response.code).to.be.oneOf([200,201]); });",
+                  "if (json) {",
+                  "  // support responses with { data: { accessToken, refreshToken, user } } or { accessToken, refreshToken }",
+                  "  const access = (json.data && json.data.accessToken) || json.accessToken || (json.token && json.token.accessToken) || '';",
+                  "  const refresh = (json.data && json.data.refreshToken) || json.refreshToken || (json.token && json.token.refreshToken) || '';",
+                  "  const uid = (json.data && (json.data.user && json.data.user.id)) || json.userId || json.id || '';",
+                  "  if (access) pm.environment.set('accessToken', access);",
+                  "  if (refresh) pm.environment.set('refreshToken', refresh);",
+                  "  if (uid) pm.environment.set('userId', uid);",
+                  "} else {",
+                  "  // no JSON — do not modify environment",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "refresh"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "description": "Tukar refresh token menjadi access token baru."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = (() => { try { return pm.response.json(); } catch(e) { return null; } })();",
+                  "pm.test('Response status is 200', function () { pm.expect(pm.response.code).to.be.oneOf([200,201]); });",
+                  "if (json) {",
+                  "  const access = (json.data && json.data.accessToken) || json.accessToken || '';",
+                  "  const refresh = (json.data && json.data.refreshToken) || json.refreshToken || '';",
+                  "  if (access) pm.environment.set('accessToken', access);",
+                  "  if (refresh) pm.environment.set('refreshToken', refresh);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"newuser@example.com\",\n  \"password\": \"secure_password_123\",\n  \"name\": \"New User\",\n  \"role\": \"client\"\n}"
+            },
+            "description": "Mendaftarkan akun baru sesuai kontrak OpenAPI."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Protected",
+      "item": [
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "profile"]
+            },
+            "description": "Mengambil profil user yang sedang login."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "profile"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated User\",\n  \"password\": \"new_secure_password_123\"\n}"
+            },
+            "description": "Memperbarui profil user yang sedang login."
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "logout"]
+            },
+            "description": "Mengakhiri sesi login dan menghapus refresh token."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.unset('accessToken');",
+                  "pm.environment.unset('refreshToken');",
+                  "pm.test('Tokens cleared from environment', function () { pm.expect(pm.environment.get('accessToken')).to.be.oneOf([undefined, '']); });",
+                  "pm.test('Logout response status is 200 or 204', function () { pm.expect(pm.response.code).to.be.oneOf([200,204]); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Internal",
+      "item": [
+        {
+          "name": "Get User by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/internal/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["internal", "users", "{{userId}}"]
+            },
+            "description": "Endpoint internal untuk mengambil detail user berdasarkan ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Validate Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/internal/validate-token",
+              "host": ["{{baseUrl}}"],
+              "path": ["internal", "validate-token"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{accessToken}}\"\n}"
+            },
+            "description": "Validasi token secara internal."
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001"
+    },
+    {
+      "key": "email",
+      "value": "testing120145@gmail.com"
+    },
+    {
+      "key": "password",
+      "value": "2026softarc"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "refreshToken",
+      "value": ""
+    },
+    {
+      "key": "userId",
+      "value": "550e8400-e29b-41d4-a716-446655440000"
+    }
+  ]
+}

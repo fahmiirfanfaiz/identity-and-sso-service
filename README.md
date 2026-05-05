@@ -1,160 +1,261 @@
-# Identity & SSO Service (Auth Service)
+# Identity & SSO Service
 
-Service **Identity & SSO** berperan sebagai *gatekeeper* untuk autentikasi dan pengelolaan profil user di ekosistem microservices.
+Service ini adalah bagian dari **Project-Hub**, sebuah platform berbasis **microservices ecosystem** yang dirancang untuk mendukung kolaborasi proyek antara mahasiswa, mitra, dan panitia dalam satu sistem terintegrasi.
 
-Repo ini berisi implementasi **auth-service** berbasis **Node.js (Express)** dengan **PostgreSQL** (via Sequelize) dan autentikasi menggunakan **JWT (access + refresh token)**.
+Di dalam ekosistem tersebut, repository ini merepresentasikan **Kelompok 1: Identity & SSO**. Perannya adalah menjadi fondasi autentikasi, otorisasi dasar, dan penyedia identitas pengguna untuk service lain di Project-Hub.
 
-> Catatan: berdasarkan `INTEGRATION_GUIDE.md`, service ini saat ini menyediakan **MOCK MODE** untuk kebutuhan integrasi awal antar service.
-
----
-
-## Gambaran Ekosistem & Stakeholder (Project-Hub)
-
-Bagian ini menambahkan konteks mengenai siapa saja stakeholder yang terlibat di ekosistem *Project-Hub*, bagaimana alur kerja antar modul, dan posisi **Kelompok 1 (Identity & SSO)** di dalam sistem.
-
-### Stakeholder yang Terlibat
-
-- **Mahasiswa**: Berperan sebagai pelaksana proyek yang mendaftar secara individu, membentuk tim secara otomatis berdasarkan kriteria tertentu, melakukan penawaran (*bidding*) pada proyek yang tersedia, dan melaporkan progres pengerjaan.
-- **Mitra (Industri/Perusahaan)**: Berperan sebagai penyedia proyek yang mengunggah deskripsi tugas atau tantangan bisnis yang perlu diselesaikan. Mereka juga memantau proses pengerjaan melalui sistem.
-- **Panitia/Dosen**: Berperan sebagai pengawas (*Auditor*) yang memberikan penilaian, mengelola pembentukan tim, serta menyebarkan pengumuman massal.
-- **System Admin/DevOps**: Tim delegasi yang memastikan infrastruktur Docker dan API Gateway berjalan lancar agar semua layanan bisa saling berkomunikasi.
-
-### Alur Kerja Ekosistem (Project-Hub)
-
-Secara garis besar, ekosistem ini bekerja dalam satu siklus terintegrasi:
-
-1. **Inisiasi**: Mitra mengunggah proyek di **Modul Lelang (Kelompok 2)**.
-2. **Matching**: Mahasiswa masuk ke dalam pool dan dikelompokkan oleh **Modul Matchmaker (Kelompok 3)**.
-3. **Bidding**: Tim mahasiswa mengajukan diri untuk mengerjakan proyek mitra.
-4. **Monitoring**: Selama pengerjaan, progres dicatat dan dinilai di **Modul Tracker (Kelompok 4)**.
-5. **Automation**: Setiap ada perubahan status (misal: tim diterima), **Modul Communication (Kelompok 5)** akan otomatis mengirim notifikasi dan membuat dokumen PDF.
-
-### Hubungan dengan Modul Kelompok 1 (Identity & SSO)
-
-Kelompok 1 bertindak sebagai **"The Gatekeeper"** atau pondasi keamanan bagi seluruh stakeholder di atas. Perannya sangat krusial karena:
-
-- **Pintu Masuk Terpusat**: Sebelum Mahasiswa, Mitra, atau Panitia bisa berinteraksi dengan modul lelang atau monitoring, mereka harus divalidasi oleh sistem SSO (Single Sign-On) milik Kelompok 1.
-- **Manajemen Hak Akses**: Kelompok 1 yang menentukan identitas pengguna. Misalnya, memastikan hanya akun berstatus "Panitia" yang bisa menginput nilai di Modul Kelompok 4, sementara "Mahasiswa" hanya bisa melihat profil.
-- **Validasi Keamanan Data**: Dengan arsitektur berlapis (*Layered Architecture*), Kelompok 1 memastikan data sensitif seperti profil mahasiswa dari sistem kampus tetap terlindungi saat digunakan oleh layanan lain.
-- **Pusat Informasi Sesi**: Melalui penggunaan Redis, Kelompok 1 menyediakan informasi apakah seorang pengguna masih aktif login atau tidak kepada modul-modul lainnya secara cepat.
-
-Tanpa Kelompok 1, sistem microservices ini tidak akan memiliki identitas yang jelas, sehingga transaksi data antar kelompok menjadi tidak aman dan tidak terverifikasi.
+> Catatan penting: workspace ini masih berada pada tahap awal / prototipe. Dokumentasi di bawah menjelaskan arah desain yang sedang dibangun, sedangkan implementasi runtime yang terlihat di repo masih minimal.
 
 ---
 
-## Ringkasan Tanggung Jawab (Kelompok 1 — The Gatekeeper)
+## Narasi Project-Hub
 
-- Autentikasi user (role yang tersedia: `client`, `freelancer`, `admin`).
-- Mengelola profil user (lihat & update profil sendiri).
-- Mengeluarkan dan memvalidasi **JWT Access Token** untuk dipakai service lain.
-- Mengelola **Refresh Token** (disimpan ke database) untuk proses *refresh* access token.
+Project-Hub dikembangkan sebagai simulasi lingkungan perangkat lunak berskala besar, di mana beberapa layanan berdiri sendiri, tetapi tetap saling terhubung melalui API.
 
-Arsitektur service mengikuti pendekatan **layered (N-tier)** secara praktis:
+Pendekatan yang dipakai adalah **service isolation**:
 
-- **Routes**: `src/routes/*`
-- **Controllers**: `src/controllers/*`
-- **Middlewares**: `src/middlewares/*`
-- **Models (Data layer)**: `src/models/*` (Sequelize)
+- setiap kelompok memiliki service dan database masing-masing,
+- tidak ada direct access antar database service,
+- komunikasi dilakukan melalui **API Gateway** dan mekanisme service-to-service yang tervalidasi,
+- interaksi dapat memakai komunikasi sinkron berbasis REST maupun skenario asynchronous seperti message broker.
+
+Secara fungsional, platform ini akan mencakup domain berikut:
+
+- autentikasi dan identitas pengguna,
+- manajemen proyek berbasis bidding,
+- pembentukan tim,
+- monitoring progres,
+- notifikasi dan otomasi.
+
+Repo ini berfokus pada domain pertama: **Identity & SSO**.
 
 ---
 
-## Teknologi
+## Arsitektur Singkat
 
-- **Runtime**: Node.js 20
-- **Framework**: Express
+```mermaid
+flowchart LR
+	U[Client / User] --> G[API Gateway]
+	G --> A[Identity & SSO Service]
+	A --> P[(PostgreSQL)]
+	A --> R[JWT Access Token]
+	R --> S[Service Lain]
+	S -->|verify lokal dengan JWT_SECRET| R
+```
+
+Alur ini menegaskan prinsip utama Project-Hub:
+
+- user masuk melalui Identity & SSO,
+- token dipakai oleh service lain tanpa harus selalu memanggil auth service,
+- data identitas tetap berada di domain milik Kelompok 1.
+
+---
+
+## Peran Kelompok 1
+
+Kelompok 1 berperan sebagai **gatekeeper** sekaligus **source of truth** untuk identitas pengguna di ekosistem Project-Hub.
+
+Layanan ini dirancang untuk:
+
+- mengautentikasi user yang masuk ke sistem,
+- mengelola profil dasar pengguna,
+- menyediakan JWT access token untuk dipakai service lain,
+- menyimpan dan memvalidasi refresh token,
+- menjadi referensi identitas untuk role seperti mahasiswa, mitra, dan panitia.
+
+Di level arsitektur, service ini memakai pendekatan **Layered Architecture / N-Tier** agar tanggung jawabnya terpisah jelas antara:
+
+- layer presentasi / routes,
+- layer logika bisnis / controllers,
+- layer akses data / models,
+- layer middleware untuk autentikasi dan validasi.
+
+---
+
+## Tech Stack
+
+Repo ini disiapkan dengan stack berikut:
+
+- **Runtime**: Node.js 20+
+- **Framework**: Express 5
+- **Language**: TypeScript
 - **Database**: PostgreSQL
-- **ORM**: Sequelize
-- **Security middleware**: Helmet, CORS
+- **ORM / database client**: Prisma
 - **Auth**: JSON Web Token (JWT)
-- **Containerization**: Docker & Docker Compose
+- **Password hashing**: bcrypt
+- **Security middleware**: Helmet, CORS
+- **Request logging**: Morgan
+- **Containerization**: Docker dan Docker Compose
+
+### Catatan implementasi saat ini
+
+- `src/index.ts` saat ini baru menyalakan server Express sederhana.
+- `src/app.ts` masih kosong.
+- `README.md` ini mengikuti arah desain yang dituju, bukan hanya kondisi runtime minimal yang ada sekarang.
 
 ---
 
 ## Struktur Repo
 
-- `services/auth-service` — service utama Identity & SSO
-- `services/template-service` — contoh/template untuk membuat service baru
-- `docker-compose.yml` — menjalankan postgres + service-service di local
-- `INTEGRATION_GUIDE.md` — panduan integrasi untuk service lain
-- `.env.example` — contoh environment root untuk Docker Compose
+Struktur yang terlihat di workspace saat ini:
+
+- `src/index.ts` - entry point server saat ini
+- `src/app.ts` - placeholder untuk konfigurasi aplikasi utama
+- `docker-compose.yml` - orkestrasi PostgreSQL dan service lokal
+- `docker/init-databases.sh` - inisialisasi database PostgreSQL
+- `INTEGRATION_GUIDE.md` - panduan integrasi antar service
+- `.env.example` - contoh environment variable root
+- `.github/workflows/ci.yml` - pipeline CI
 
 ---
 
-## Menjalankan dengan Docker Compose (Disarankan)
+## Status Implementasi
+
+Bagian ini penting supaya dokumentasi tidak menyesatkan:
+
+- **Sudah ada di repo**: kerangka proyek, stack dependency, docker orchestration, dan dokumen integrasi.
+- **Masih dalam desain / draft**: endpoint auth lengkap, model data final, middleware otorisasi, dan internal service API.
+- **Mode integrasi saat ini**: mock mode untuk memudahkan service lain melakukan pengujian awal.
+
+Untuk detail mock integration, lihat [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md).
+
+---
+
+## Menjalankan Project
+
+### Dengan Docker Compose
 
 1. Buat file `.env` dari contoh:
 
 ```bash
-cp .env.example .env
+copy .env.example .env
 ```
 
-2. Jalankan semua service:
+2. Jalankan service:
 
 ```bash
 docker compose up --build -d
 ```
 
-3. Cek health endpoint:
-
-- Auth service: `GET http://localhost:3001/health`
-
-4. Lihat log:
+3. Cek container dan log:
 
 ```bash
+docker compose ps
 docker compose logs -f auth-service
 ```
 
-> Port mapping penting: auth-service diexpose ke host di **3001** (container port 3000). Lihat `docker-compose.yml`.
+### Tanpa Docker
 
----
-
-## Menjalankan Tanpa Docker (Auth Service saja)
-
-> Untuk mode ini, pastikan PostgreSQL sudah berjalan dan database `auth_db` tersedia.
+Jika ingin menjalankan service langsung dari host, pastikan PostgreSQL tersedia terlebih dahulu.
 
 ```bash
-cd services/auth-service
-cp .env.example .env
 npm install
 npm run dev
 ```
-
-Auth service default berjalan di `http://localhost:3000` (sesuai `PORT` di `.env`).
 
 ---
 
 ## Environment Variables
 
-### Root `.env` (untuk Docker Compose)
+File contoh tersedia di [`.env.example`](.env.example).
 
-Lihat `.env.example` di root repo:
+Variabel penting yang dipakai:
 
-- `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_PORT`
+- `POSTGRES_USER`
+- `POSTGRES_PASSWORD`
+- `POSTGRES_PORT`
 - `AUTH_DB_NAME`
 - `JWT_SECRET`
 - `NODE_ENV`
 
-### Auth service `.env` (untuk run tanpa Docker)
-
-Lihat `services/auth-service/.env.example`:
-
-- `PORT`, `NODE_ENV`
-- `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`
-- `JWT_SECRET`, `JWT_ACCESS_EXPIRES`, `JWT_REFRESH_EXPIRES`
-
 ---
 
-## API Endpoints
+## Dokumentasi API
 
-Base path: `/api`
+Base path yang direncanakan: `/api`
 
-### Public Endpoints
+Dokumentasi API di bawah dibagi menjadi tiga kelompok:
 
-- `POST /api/auth/register` — daftar akun baru
-- `POST /api/auth/login` — login dan dapatkan token
-- `POST /api/auth/refresh` — perbarui access token
+- **available / intended**: endpoint yang menjadi kontrak utama service ini,
+- **mock**: endpoint yang saat ini disebut di integrasi awal,
+- **planned**: endpoint internal yang disiapkan untuk kebutuhan service-to-service.
 
-### Protected Endpoints (butuh Bearer token)
+### 1) Public API
+
+Endpoint ini tidak memerlukan token.
+
+| Method | Endpoint | Status | Deskripsi |
+|---|---|---|---|
+| POST | `/api/auth/register` | intended | Membuat akun baru untuk user Project-Hub |
+| POST | `/api/auth/login` | intended / mock | Login user dan menghasilkan access token serta refresh token |
+| POST | `/api/auth/refresh` | intended / mock | Menukar refresh token menjadi access token baru |
+
+### 2) Protected API
+
+Endpoint ini memerlukan header:
+
+```http
+Authorization: Bearer <accessToken>
+```
+
+| Method | Endpoint | Status | Deskripsi |
+|---|---|---|---|
+| POST | `/api/auth/logout` | intended | Mengakhiri sesi login dengan menghapus refresh token |
+| GET | `/api/auth/profile` | intended | Mengambil profil pengguna yang sedang login |
+| PUT | `/api/auth/profile` | intended | Memperbarui profil pengguna yang sedang login |
+
+### 3) Internal API
+
+Endpoint ini dipakai untuk kebutuhan antar service di dalam network Docker atau backend internal.
+
+| Method | Endpoint | Status | Deskripsi |
+|---|---|---|---|
+| GET | `/internal/users/:id` | planned | Mengambil data user berdasarkan ID |
+| POST | `/internal/validate-token` | planned | Validasi token secara internal bila service lain tidak ingin verifikasi lokal |
+
+### 4) Mock Endpoint untuk Integrasi Awal
+
+`INTEGRATION_GUIDE.md` menjelaskan skenario integrasi awal dengan mock users berikut:
+
+- `client@mock.dev`
+- `freelancer@mock.dev`
+- `admin@mock.dev`
+
+Mock mode ini dipakai agar service lain bisa diuji lebih awal tanpa menunggu implementasi auth penuh selesai.
+
+### 5) Contoh Request / Response
+
+#### POST /api/auth/login
+
+Request:
+
+```json
+{
+	"email": "client@mock.dev",
+	"password": "apa saja"
+}
+```
+
+Response sukses:
+
+```json
+{
+	"success": true,
+	"message": "Login berhasil",
+	"data": {
+		"accessToken": "eyJhbGciOi...",
+		"refreshToken": "eyJhbGciOi...",
+		"user": {
+			"id": "uuid-user",
+			"email": "client@mock.dev",
+			"role": "client"
+		}
+	},
+	"_mock": true
+}
+```
+
+#### GET /api/auth/profile
 
 Header:
 
@@ -162,45 +263,96 @@ Header:
 Authorization: Bearer <accessToken>
 ```
 
-- `POST /api/auth/logout` — logout (hapus refresh token)
-- `GET /api/auth/profile` — lihat profil sendiri
-- `PUT /api/auth/profile` — update profil sendiri
+Response sukses:
 
-Untuk detail payload/response dan contoh integrasi antar-service, baca:
+```json
+{
+	"success": true,
+	"message": "Profil user berhasil diambil",
+	"data": {
+		"id": "uuid-user",
+		"name": "Client Mock",
+		"email": "client@mock.dev",
+		"role": "client"
+	}
+}
+```
 
-- **`INTEGRATION_GUIDE.md`**
+#### GET /internal/users/:id
+
+Response sukses:
+
+```json
+{
+	"success": true,
+	"message": "User ditemukan",
+	"data": {
+		"id": "uuid-user",
+		"name": "John Doe",
+		"email": "john@example.com",
+		"role": "freelancer",
+		"is_active": true
+	}
+}
+```
+
+---
+
+## Konsep Token untuk Service Lain
+
+JWT access token yang dikeluarkan service ini dirancang berisi informasi dasar seperti:
+
+- `id`
+- `email`
+- `role`
+
+Prinsip yang dianut:
+
+- service lain memverifikasi JWT secara lokal dengan `JWT_SECRET` yang sama,
+- service lain tidak perlu memanggil auth service di setiap request,
+- jika butuh data user yang lebih lengkap, service lain dapat memakai endpoint internal yang sudah didesain.
 
 ---
 
-## Konsep Token (untuk Service Lain)
+## Alur Integrasi Singkat
 
-Prinsip integrasi yang dipakai di repo ini:
+1. User login ke Identity & SSO.
+2. Service mengembalikan access token dan refresh token.
+3. Client mengirim access token ke service lain lewat header `Authorization`.
+4. Service lain memverifikasi token secara lokal.
+5. Role pengguna dipakai untuk menentukan hak akses.
 
-- Token **JWT** berisi informasi user (`id`, `email`, `role`).
-- Service lain cukup melakukan **verifikasi JWT secara lokal** menggunakan `JWT_SECRET` yang sama.
-- Tidak perlu memanggil auth-service setiap request.
+Contoh target penggunaannya:
 
----
-
-## Status Saat Ini: MOCK MODE
-
-Dokumen integrasi menyatakan auth-service belum live penuh, namun mock endpoint & mock users tersedia untuk testing.
-
-Lihat bagian **"Status Saat Ini: MOCK MODE"** di `INTEGRATION_GUIDE.md` untuk daftar user uji dan skenario mock.
+- mahasiswa dapat login dan melihat profil,
+- mitra dapat masuk untuk mengelola proyek,
+- panitia dapat mengakses fitur administratif yang dibatasi role.
 
 ---
 
-## Checklist Portofolio (Mengacu Kebutuhan Penilaian)
+## Checklist Dokumentasi
 
-- [x] Link repository GitHub
-- [x] Dockerfile & Docker Compose (`services/auth-service/Dockerfile`, `docker-compose.yml`)
-- [x] Dokumentasi integrasi antar service (`INTEGRATION_GUIDE.md`)
-- [ ] Dokumentasi API (Swagger / Postman) — *belum ada di repo, dapat ditambahkan*
-- [ ] Diagram arsitektur — *belum ada di repo, dapat ditambahkan*
-- [ ] Tracking progress (Trello) — di luar repo
+- [x] Narasi Project-Hub dan peran Kelompok 1
+- [x] Tech stack repo
+- [x] Status implementasi saat ini
+- [x] Dokumentasi API public, protected, dan internal
+- [x] Referensi ke mock integration
+- [ ] OpenAPI / Swagger spec
+- [ ] Diagram arsitektur layanan
+- [ ] Contoh request/response lengkap untuk tiap endpoint
 
 ---
+
+## Referensi Lanjutan
+
+- **[ENDPOINTS.md](ENDPOINTS.md)** ← Inventory lengkap semua endpoint (source of truth untuk documentation engineer)
+- **[docs/swagger.yml](docs/swagger.yml)** ← OpenAPI 3.0 specification dalam file bernama Swagger
+- **[docs/README.md](docs/README.md)** ← Cara menggunakan Swagger dan documentation tools
+- [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md)
+- [docker-compose.yml](docker-compose.yml)
+- [package.json](package.json)
+- [src/index.ts](src/index.ts)
 
 ## Lisensi
 
-Lihat file `LICENSE`.
+Lihat [LICENSE](LICENSE).

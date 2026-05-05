@@ -1,0 +1,649 @@
+openapi: 3.0.0
+
+info:
+  title: Identity & SSO Service API
+  description: |
+    Service ini adalah bagian dari Project-Hub microservices ecosystem.
+    Berfungsi sebagai gatekeeper untuk autentikasi, otorisasi, dan manajemen identitas pengguna.
+
+    **Status**: Prototipe / Early Stage
+    **Version**: 1.0.0-alpha
+    **Author**: Kelompok 1
+
+    ## Fitur Utama
+    - Autentikasi user dengan JWT
+    - Manajemen profil user
+    - Token refresh mechanism
+    - Role-based access control
+    - Service-to-service internal API
+
+    ## Role yang Tersedia
+    - `client` - Pengguna reguler (mitra/klien)
+    - `freelancer` - Pengguna freelancer (mahasiswa)
+    - `admin` - Administrator
+
+  version: 1.0.0-alpha
+  contact:
+    name: Kelompok 1 - Identity & SSO
+    url: https://github.com/fahmiirfanfaiz/identity-and-sso-service
+  license:
+    name: ISC
+    url: https://opensource.org/licenses/ISC
+
+servers:
+  - url: http://localhost:3001
+    description: Development (Host machine)
+    variables:
+      port:
+        default: '3001'
+  - url: http://localhost:5000
+    description: Development (Direct run without Docker)
+  - url: http://auth-service:3000
+    description: Docker internal network
+
+tags:
+  - name: Authentication
+    description: Public endpoints untuk login, register, refresh token
+  - name: User Profile
+    description: Protected endpoints untuk mengelola profil user
+  - name: Internal
+    description: Service-to-service endpoints (internal only, tidak expose ke publik)
+
+paths:
+  /api/auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register akun baru
+      description: Membuat akun user baru di sistem
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            example:
+              email: john@example.com
+              password: secure_password_123
+              name: John Doe
+              role: client
+      responses:
+        '201':
+          description: Akun berhasil dibuat
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterResponse'
+        '400':
+          description: Validasi input gagal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: Validasi gagal
+                errors:
+                  - email harus format valid
+                  - password minimal 8 karakter
+        '409':
+          description: Email sudah terdaftar
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: Email sudah terdaftar
+                errors:
+                  - email
+
+  /api/auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login user
+      description: |
+        Autentikasi user dan dapatkan access token serta refresh token.
+        Untuk testing awal, gunakan mock users yang tersedia.
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              email: client@mock.dev
+              password: apa saja
+      responses:
+        '200':
+          description: Login berhasil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          description: Request body tidak valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Email atau password salah
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: Email atau password salah
+                errors:
+                  - email
+                  - password
+
+  /api/auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh access token
+      description: Menukar refresh token menjadi access token baru
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+            example:
+              refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+      responses:
+        '200':
+          description: Token berhasil diperbarui
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshTokenResponse'
+        '400':
+          description: Request body tidak valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Refresh token tidak valid atau expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: Refresh token tidak valid atau expired
+                errors:
+                  - refreshToken
+
+  /api/auth/logout:
+    post:
+      tags:
+        - User Profile
+      summary: Logout user
+      description: Mengakhiri sesi dan menghapus refresh token
+      operationId: logoutUser
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Logout berhasil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessage'
+              example:
+                success: true
+                message: Logout berhasil, refresh token dihapus
+        '401':
+          description: Token tidak valid atau sudah expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/profile:
+    get:
+      tags:
+        - User Profile
+      summary: Get user profile
+      description: Mengambil profil user yang sedang login
+      operationId: getUserProfile
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Profil user berhasil diambil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileResponse'
+        '401':
+          description: Token tidak valid atau sudah expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - User Profile
+      summary: Update user profile
+      description: Memperbarui profil user yang sedang login
+      operationId: updateUserProfile
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequest'
+            example:
+              name: John Updated
+              password: new_secure_password_123
+      responses:
+        '200':
+          description: Profil berhasil diperbarui
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateProfileResponse'
+        '400':
+          description: Validasi input gagal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: Validasi gagal
+                errors:
+                  - name harus minimal 3 karakter
+                  - password minimal 8 karakter
+        '401':
+          description: Token tidak valid atau sudah expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /internal/users/{id}:
+    get:
+      tags:
+        - Internal
+      summary: Get user by ID (internal)
+      description: |
+        Mengambil data user berdasarkan ID.
+        Endpoint ini hanya bisa dipanggil dari dalam Docker network atau backend internal.
+      operationId: getUserById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: User ID (UUID)
+          example: 550e8400-e29b-41d4-a716-446655440000
+      responses:
+        '200':
+          description: User ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalUserResponse'
+        '404':
+          description: User tidak ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: User tidak ditemukan
+
+  /internal/validate-token:
+    post:
+      tags:
+        - Internal
+      summary: Validate token (internal)
+      description: |
+        Validasi token secara internal.
+        Endpoint ini hanya bisa dipanggil dari dalam Docker network atau backend internal.
+
+        **Catatan**: Service lain lebih disarankan memverifikasi token secara lokal dengan JWT_SECRET yang sama.
+      operationId: validateToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidateTokenRequest'
+            example:
+              token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+      responses:
+        '200':
+          description: Token valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidateTokenResponse'
+        '401':
+          description: Token tidak valid atau sudah expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: Token tidak valid atau sudah expired
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT Access Token yang diperoleh dari endpoint login.
+        Format: `Authorization: Bearer <accessToken>`
+
+  schemas:
+    # ─── Request Schemas ──────────────────────────────────────
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - password
+        - name
+        - role
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email user (harus unik)
+          example: john@example.com
+        password:
+          type: string
+          minLength: 8
+          description: Password (minimal 8 karakter)
+          example: secure_password_123
+        name:
+          type: string
+          minLength: 3
+          maxLength: 100
+          description: Nama lengkap user
+          example: John Doe
+        role:
+          type: string
+          enum: [client, freelancer, admin]
+          description: Role user (admin hanya bisa dibuat oleh admin)
+          example: client
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email user
+          example: client@mock.dev
+        password:
+          type: string
+          description: Password user
+          example: apa saja
+
+    RefreshTokenRequest:
+      type: object
+      required:
+        - refreshToken
+      properties:
+        refreshToken:
+          type: string
+          description: Refresh token yang diperoleh dari login
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+    UpdateProfileRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 100
+          description: Nama lengkap baru
+          example: John Updated
+        password:
+          type: string
+          minLength: 8
+          description: Password baru (opsional, jika tidak dikirim password tidak diubah)
+          example: new_secure_password_123
+
+    ValidateTokenRequest:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          description: JWT token yang akan divalidasi
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+    # ─── Response Schemas ─────────────────────────────────────
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: User ID (UUID)
+          example: 550e8400-e29b-41d4-a716-446655440000
+        email:
+          type: string
+          format: email
+          description: Email user
+          example: john@example.com
+        name:
+          type: string
+          description: Nama lengkap user
+          example: John Doe
+        role:
+          type: string
+          enum: [client, freelancer, admin]
+          description: Role user
+          example: client
+
+    UserProfile:
+      allOf:
+        - $ref: '#/components/schemas/User'
+        - type: object
+          properties:
+            is_active:
+              type: boolean
+              description: Status aktif user
+              example: true
+            created_at:
+              type: string
+              format: date-time
+              description: Timestamp pembuatan akun
+              example: '2026-05-01T10:00:00Z'
+            updated_at:
+              type: string
+              format: date-time
+              description: Timestamp update terakhir
+              example: '2026-05-05T14:30:00Z'
+
+    RegisterResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Akun berhasil dibuat
+        data:
+          $ref: '#/components/schemas/User'
+
+    LoginResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Login berhasil
+        data:
+          type: object
+          properties:
+            accessToken:
+              type: string
+              description: JWT access token (valid 15 menit)
+              example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+            refreshToken:
+              type: string
+              description: JWT refresh token (valid 7 hari)
+              example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+            user:
+              $ref: '#/components/schemas/User'
+        _mock:
+          type: boolean
+          description: Flag penanda mock mode (hanya ada di mode testing)
+          example: true
+
+    RefreshTokenResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Token berhasil diperbarui
+        data:
+          type: object
+          properties:
+            accessToken:
+              type: string
+              example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+            refreshToken:
+              type: string
+              example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+    ProfileResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Profil user berhasil diambil
+        data:
+          $ref: '#/components/schemas/UserProfile'
+
+    UpdateProfileResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Profil berhasil diperbarui
+        data:
+          $ref: '#/components/schemas/UserProfile'
+
+    InternalUserResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: User ditemukan
+        data:
+          $ref: '#/components/schemas/UserProfile'
+
+    ValidateTokenResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Token valid
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+              example: 550e8400-e29b-41d4-a716-446655440000
+            email:
+              type: string
+              format: email
+              example: john@example.com
+            role:
+              type: string
+              enum: [client, freelancer, admin]
+              example: freelancer
+            iat:
+              type: integer
+              description: Issued at (Unix timestamp)
+              example: 1714000000
+            exp:
+              type: integer
+              description: Expiration time (Unix timestamp)
+              example: 1714003600
+
+    SuccessMessage:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Operasi berhasil
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          description: Pesan error
+          example: Operasi gagal
+        errors:
+          type: array
+          items:
+            type: string
+          description: Array detail error (opsional)
+          example:
+            - email harus format valid
+            - password minimal 8 karakter
+
+security:
+  - {}  # Sebagian besar endpoint tidak memerlukan auth
