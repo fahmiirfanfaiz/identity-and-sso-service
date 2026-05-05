@@ -65,7 +65,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
       name: string;
       email: string;
       password: string;
-      role?: "client" | "freelancer" | "admin";
+      role?: "mahasiswa" | "mitra" | "admin";
     };
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -82,7 +82,7 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
         name,
         email,
         password: hashedPassword,
-        role: role ?? "client",
+        role: role ?? "mahasiswa",
       },
     });
 

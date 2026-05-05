@@ -38,8 +38,7 @@ const stripPassword = (user: {
 });
 
 const resolveOAuthRole = (email: string): AppRole => {
-  // Temporary mapping while the dedicated role-authz branch is still using the old enum.
-  return email.endsWith("@mail.ugm.ac.id") ? "client" : "freelancer";
+  return email.endsWith("@mail.ugm.ac.id") ? "mahasiswa" : "mitra";
 };
 
 export const googleLogin = async (req: Request, res: Response, next: NextFunction) => {

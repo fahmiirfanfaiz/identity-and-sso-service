@@ -9,8 +9,8 @@ datasource db {
 }
 
 enum UserRole {
-  client
-  freelancer
+  mahasiswa
+  mitra
   admin
 }
 
@@ -20,7 +20,7 @@ model User {
   email         String         @unique
   password      String?
   googleSubject String?        @unique @map("google_subject")
-  role          UserRole       @default(client)
+  role          UserRole       @default(mahasiswa)
   isActive      Boolean        @default(true) @map("is_active")
   refreshTokens RefreshToken[]
   createdAt     DateTime       @default(now()) @map("created_at")

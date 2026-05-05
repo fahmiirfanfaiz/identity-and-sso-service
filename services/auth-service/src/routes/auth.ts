@@ -10,6 +10,7 @@ import {
   updateProfile,
 } from "../controllers/authController";
 import authenticate from "../middlewares/authenticate";
+import authorize from "../middlewares/authorize";
 
 const router = Router();
 
@@ -21,8 +22,8 @@ const registerValidation = [
     .withMessage("Password must be at least 8 characters"),
   body("role")
     .optional()
-    .isIn(["client", "freelancer", "admin"])
-    .withMessage("Role must be client, freelancer, or admin"),
+    .isIn(["mahasiswa", "mitra", "admin"])
+    .withMessage("Role must be mahasiswa, mitra, or admin"),
 ];
 
 const loginValidation = [
@@ -38,11 +39,19 @@ const updateProfileValidation = [
     .withMessage("Password must be at least 8 characters"),
 ];
 
+// ─── Public Endpoints ────────────────────────────
 router.post("/register", registerValidation, register);
 router.post("/login", loginValidation, login);
 router.post("/refresh", refreshToken);
-router.post("/logout", authenticate, logout);
-router.get("/profile", authenticate, getProfile);
-router.put("/profile", authenticate, updateProfileValidation, updateProfile);
+
+// ─── Protected Endpoints (semua role yang sudah login) ─
+router.post("/logout", authenticate, authorize(["mahasiswa", "mitra", "admin"]), logout);
+router.get("/profile", authenticate, authorize(["mahasiswa", "mitra", "admin"]), getProfile);
+router.put("/profile", authenticate, authorize(["mahasiswa", "mitra", "admin"]), updateProfile);
+
+// ─── Admin-Only Endpoint ─────────────────────────
+// Hanya admin yang boleh membuat akun admin baru
+router.post("/register/admin", authenticate, authorize(["admin"]), registerValidation, register);
 
 export default router;
+

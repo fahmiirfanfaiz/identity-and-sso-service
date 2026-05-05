@@ -16,17 +16,17 @@ const router = Router();
 const MOCK_USERS = [
   {
     id: 'mock-uuid-0001',
-    name: 'Alice Client',
-    email: 'client@mock.dev',
-    role: 'client',
+    name: 'Alice Mahasiswa',
+    email: 'mahasiswa@mock.dev',
+    role: 'mahasiswa',
     is_active: true,
     created_at: '2025-01-01T00:00:00.000Z',
   },
   {
     id: 'mock-uuid-0002',
-    name: 'Bob Freelancer',
-    email: 'freelancer@mock.dev',
-    role: 'freelancer',
+    name: 'Bob Mitra',
+    email: 'mitra@mock.dev',
+    role: 'mitra',
     is_active: true,
     created_at: '2025-01-01T00:00:00.000Z',
   },
@@ -93,8 +93,8 @@ router.post('/validate-token', (req, res) => {
     data: {
       user: {
         id: 'mock-uuid-0001',
-        email: 'client@mock.dev',
-        role: 'client',
+        email: 'mahasiswa@mock.dev',
+        role: 'mahasiswa',
       },
     },
     _mock: true,

@@ -12,7 +12,7 @@ Base URL: `http://localhost:3001/api/auth`
 
 ### POST `/api/auth/register`
 
-Register a new `client` or `freelancer` account.
+Register a new `mahasiswa` or `mitra` account.
 
 Example request:
 
@@ -21,7 +21,7 @@ Example request:
   "name": "Budi Santoso",
   "email": "budi@example.com",
   "password": "password123",
-  "role": "client"
+  "role": "mahasiswa"
 }
 ```
 
@@ -30,7 +30,7 @@ Validation:
 - `name` is required.
 - `email` must be a valid email.
 - `password` must be at least 8 characters.
-- `role` is optional, default is `client`. Can be `client`, `freelancer`, or `admin`.
+- `role` is optional, default is `mahasiswa`. Can be `mahasiswa`, `mitra`, or `admin`.
 
 Response `201 Created`:
 
@@ -43,7 +43,7 @@ Response `201 Created`:
       "id": "uuid",
       "name": "Budi Santoso",
       "email": "budi@example.com",
-      "role": "client",
+      "role": "mahasiswa",
       "is_active": true,
       "createdAt": "2024-01-01T00:00:00.000Z",
       "updatedAt": "2024-01-01T00:00:00.000Z"
@@ -76,7 +76,7 @@ Response `200 OK`:
       "id": "uuid",
       "name": "Budi Santoso",
       "email": "budi@example.com",
-      "role": "client",
+      "role": "mahasiswa",
       "is_active": true,
       "createdAt": "2024-01-01T00:00:00.000Z",
       "updatedAt": "2024-01-01T00:00:00.000Z"
@@ -136,7 +136,7 @@ Response `200 OK`:
       "id": "uuid",
       "name": "Budi Santoso",
       "email": "budi@example.com",
-      "role": "client",
+      "role": "mahasiswa",
       "is_active": true,
       "createdAt": "2024-01-01T00:00:00.000Z",
       "updatedAt": "2024-01-01T00:00:00.000Z"
@@ -173,6 +173,6 @@ Notes:
 
 | Role | Description |
 |------|-------------|
-| `client` | Standard user seeking services |
-| `freelancer` | User providing services |
-| `admin` | Reserved for platform administrator |
+| `mahasiswa` | Mahasiswa yang melakukan bidding dan mengerjakan proyek |
+| `mitra` | Mitra industri/perusahaan yang menyediakan proyek |
+| `admin` | Administrator platform (panitia/dosen) |
