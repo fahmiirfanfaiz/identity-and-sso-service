@@ -9,8 +9,8 @@ datasource db {
 }
 
 enum UserRole {
-  client
-  freelancer
+  mahasiswa
+  mitra
   admin
 }
 
@@ -19,7 +19,7 @@ model User {
   name          String
   email         String         @unique
   password      String
-  role          UserRole       @default(client)
+  role          UserRole       @default(mahasiswa)
   isActive      Boolean        @default(true) @map("is_active")
   refreshTokens RefreshToken[]
   createdAt     DateTime       @default(now()) @map("created_at")
