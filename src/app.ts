@@ -12,7 +12,23 @@ import internalRoutes from "./routes/internal.routes";
 const app = express();
 
 app.use(helmet());
-app.use(cors());
+app.use(
+  cors({
+    origin(origin, callback) {
+      // No origin = server-to-server or curl; not a browser request, always allow
+      if (!origin) return callback(null, true);
+
+      // Empty whitelist in non-production: allow all browser origins (dev convenience)
+      // Empty whitelist in production: block all browser origins (forces explicit config)
+      if (config.corsAllowedOrigins.length === 0) {
+        return callback(null, config.nodeEnv !== "production");
+      }
+
+      callback(null, config.corsAllowedOrigins.includes(origin));
+    },
+    credentials: true,
+  }),
+);
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 if (config.nodeEnv !== "test") {

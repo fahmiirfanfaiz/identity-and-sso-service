@@ -21,6 +21,10 @@ export const config = {
   internalApiKey: process.env.INTERNAL_API_KEY ?? "",
   databaseUrl: process.env.DATABASE_URL ?? "",
   directUrl: process.env.DIRECT_URL ?? "",
+  corsAllowedOrigins: (process.env.CORS_ALLOWED_ORIGINS ?? "")
+    .split(",")
+    .map((o) => o.trim())
+    .filter(Boolean),
 };
 
 if (!config.databaseUrl) {

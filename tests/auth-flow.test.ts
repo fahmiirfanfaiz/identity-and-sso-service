@@ -613,3 +613,32 @@ describe("Business logic edge cases", () => {
     }
   });
 });
+
+describe("CORS", () => {
+  it("allows requests without an Origin header (server-to-server)", async () => {
+    const res = await request(app).get("/health");
+    expect(res.status).toBe(200);
+    expect(res.headers["access-control-allow-origin"]).toBeUndefined();
+  });
+
+  it("allows requests from a permitted origin and sets CORS headers", async () => {
+    // In test env CORS_ALLOWED_ORIGINS is unset → empty whitelist → non-production fallback allows all
+    const res = await request(app)
+      .get("/health")
+      .set("Origin", "http://localhost:5173");
+    expect(res.status).toBe(200);
+    expect(res.headers["access-control-allow-origin"]).toBe("http://localhost:5173");
+    expect(res.headers["access-control-allow-credentials"]).toBe("true");
+  });
+
+  it("handles preflight OPTIONS request correctly", async () => {
+    const res = await request(app)
+      .options("/api/auth/login")
+      .set("Origin", "http://localhost:5173")
+      .set("Access-Control-Request-Method", "POST")
+      .set("Access-Control-Request-Headers", "Content-Type,Authorization");
+    expect(res.status).toBe(204);
+    expect(res.headers["access-control-allow-origin"]).toBe("http://localhost:5173");
+    expect(res.headers["access-control-allow-methods"]).toBeDefined();
+  });
+});
