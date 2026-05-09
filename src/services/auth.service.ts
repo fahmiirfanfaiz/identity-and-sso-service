@@ -1,10 +1,9 @@
 import bcrypt from "bcryptjs";
 
 import { config } from "../config";
-import { auditLogRepository } from "../repositories/auditLog.repository";
 import { refreshTokenRepository } from "../repositories/refreshToken.repository";
 import { userRepository } from "../repositories/user.repository";
-import type { AppRole, SafeUser } from "../types/auth";
+import type { AppRole, RequestContext, SafeUser } from "../types/auth";
 import {
   BadRequestError,
   ConflictError,
@@ -17,6 +16,7 @@ import {
   verifyRefreshToken,
 } from "../utils/jwt";
 import { parseExpiresToMs } from "../utils/time";
+import { logAuditEvent } from "../utils/audit";
 import { stripPassword } from "../utils/user";
 
 type RegisterInput = {
@@ -36,20 +36,7 @@ type UpdateProfileInput = {
   password?: string;
 };
 
-type RequestContext = {
-  ip?: string;
-  userAgent?: string;
-};
-
-const log = async (
-  data: Parameters<typeof auditLogRepository.create>[0],
-): Promise<void> => {
-  try {
-    await auditLogRepository.create(data);
-  } catch {
-    // audit log failure must not break auth flows
-  }
-};
+const log = logAuditEvent;
 
 export const authService = {
   async register(input: RegisterInput, ctx?: RequestContext): Promise<SafeUser> {
