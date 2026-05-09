@@ -56,7 +56,7 @@ export const authController = {
 
   async getProfile(req: Request, res: Response, next: NextFunction) {
     try {
-      const user = await authService.getProfile(req.user.id);
+      const user = await authService.getProfile(req.user!.id);
       return res.status(200).json({
         success: true,
         message: "Profile retrieved successfully",
@@ -69,7 +69,7 @@ export const authController = {
 
   async updateProfile(req: Request, res: Response, next: NextFunction) {
     try {
-      const user = await authService.updateProfile(req.user.id, req.body);
+      const user = await authService.updateProfile(req.user!.id, req.body);
       return res.status(200).json({
         success: true,
         message: "Profile updated successfully",

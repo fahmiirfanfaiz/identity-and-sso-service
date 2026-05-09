@@ -19,14 +19,23 @@ export const internalService = {
     return { users: safe, total: safe.length };
   },
 
-  validateToken(token: string | undefined): JwtPayload {
+  async validateToken(token: string | undefined): Promise<JwtPayload> {
     if (!token) {
       throw new BadRequestError("Token is required");
     }
+
+    let payload: JwtPayload;
     try {
-      return verifyAccessToken(token);
+      payload = verifyAccessToken(token);
     } catch {
       throw new UnauthorizedError("Invalid or expired token");
     }
+
+    const user = await userRepository.findById(payload.id);
+    if (!user || !user.isActive) {
+      throw new UnauthorizedError("User not found or inactive");
+    }
+
+    return payload;
   },
 };

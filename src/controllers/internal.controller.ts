@@ -31,7 +31,7 @@ export const internalController = {
 
   async validateToken(req: Request, res: Response, next: NextFunction) {
     try {
-      const payload = internalService.validateToken(req.body?.token);
+      const payload = await internalService.validateToken(req.body?.token);
       return res.status(200).json({
         success: true,
         message: "Token is valid",

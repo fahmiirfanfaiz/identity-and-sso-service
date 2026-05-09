@@ -433,6 +433,56 @@ describe("Internal endpoints", () => {
 
     expect(res.status).toBe(401);
   });
+
+  it("returns 200 when validating a token for an active user", async () => {
+    const secret = process.env.JWT_SECRET ?? "test-secret";
+    const token = jwt.sign(
+      { id: internalUserId, email: internalUserEmail, role: "talent" as const },
+      secret,
+      { expiresIn: "15m" },
+    );
+
+    const res = await request(app)
+      .post("/internal/validate-token")
+      .set("x-internal-api-key", internalApiKey)
+      .send({ token });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.user.id).toBe(internalUserId);
+  });
+
+  it("returns 401 when validating a token for an inactive user", async () => {
+    const inactiveEmail = `internal.inactive.${uniqueId}@example.com`;
+
+    try {
+      const hashedPassword = await bcrypt.hash("Password123!", 12);
+      const inactiveUser = await prisma.user.create({
+        data: {
+          name: "Inactive User",
+          email: inactiveEmail,
+          password: hashedPassword,
+          role: "talent",
+          isActive: false,
+        },
+      });
+
+      const secret = process.env.JWT_SECRET ?? "test-secret";
+      const token = jwt.sign(
+        { id: inactiveUser.id, email: inactiveEmail, role: "talent" as const },
+        secret,
+        { expiresIn: "15m" },
+      );
+
+      const res = await request(app)
+        .post("/internal/validate-token")
+        .set("x-internal-api-key", internalApiKey)
+        .send({ token });
+
+      expect(res.status).toBe(401);
+    } finally {
+      await prisma.user.deleteMany({ where: { email: inactiveEmail } });
+    }
+  });
 });
 
 describe("Input validation", () => {
