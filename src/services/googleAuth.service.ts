@@ -12,8 +12,7 @@ import { generateAccessToken, generateRefreshToken } from "../utils/jwt";
 import { parseExpiresToMs } from "../utils/time";
 import { stripPassword } from "../utils/user";
 
-const resolveOAuthRole = (email: string): AppRole =>
-  email.endsWith("@mail.ugm.ac.id") ? "mahasiswa" : "mitra";
+const resolveOAuthRole = (_email: string): AppRole => "client";
 
 export const googleAuthService = {
   async login(idToken: string | undefined): Promise<{

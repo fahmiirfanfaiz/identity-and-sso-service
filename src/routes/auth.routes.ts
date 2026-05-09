@@ -16,8 +16,8 @@ const registerValidation = [
     .withMessage("Password must be at least 8 characters"),
   body("role")
     .optional()
-    .isIn(["mahasiswa", "mitra", "admin"])
-    .withMessage("Role must be mahasiswa, mitra, or admin"),
+    .isIn(["talent", "client", "admin"])
+    .withMessage("Role must be talent, client, or admin"),
 ];
 
 const loginValidation = [
@@ -42,19 +42,19 @@ router.post("/refresh", authController.refreshToken);
 router.post(
   "/logout",
   authenticate,
-  authorize(["mahasiswa", "mitra", "admin"]),
+  authorize(["talent", "client", "admin"]),
   authController.logout,
 );
 router.get(
   "/profile",
   authenticate,
-  authorize(["mahasiswa", "mitra", "admin"]),
+  authorize(["talent", "client", "admin"]),
   authController.getProfile,
 );
 router.put(
   "/profile",
   authenticate,
-  authorize(["mahasiswa", "mitra", "admin"]),
+  authorize(["talent", "client", "admin"]),
   updateProfileValidation,
   validate,
   authController.updateProfile,

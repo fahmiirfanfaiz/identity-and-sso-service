@@ -47,7 +47,7 @@ export const authService = {
       name: input.name,
       email: input.email,
       password: hashedPassword,
-      role: input.role ?? "mahasiswa",
+      role: input.role ?? "talent",
     });
 
     return stripPassword(user);
