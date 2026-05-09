@@ -8,12 +8,24 @@ import { validate } from "../middlewares/validate";
 
 const router = Router();
 
-const registerValidation = [
+const baseRegisterValidation = [
   body("name").trim().notEmpty().withMessage("Name is required"),
   body("email").isEmail().withMessage("Valid email is required").normalizeEmail(),
   body("password")
     .isLength({ min: 8 })
     .withMessage("Password must be at least 8 characters"),
+];
+
+const publicRegisterValidation = [
+  ...baseRegisterValidation,
+  body("role")
+    .optional()
+    .isIn(["talent", "client"])
+    .withMessage("Role must be talent or client"),
+];
+
+const adminRegisterValidation = [
+  ...baseRegisterValidation,
   body("role")
     .optional()
     .isIn(["talent", "client", "admin"])
@@ -34,7 +46,7 @@ const updateProfileValidation = [
 ];
 
 // Public
-router.post("/register", registerValidation, validate, authController.register);
+router.post("/register", publicRegisterValidation, validate, authController.register);
 router.post("/login", loginValidation, validate, authController.login);
 router.post("/refresh", authController.refreshToken);
 
@@ -65,7 +77,7 @@ router.post(
   "/register/admin",
   authenticate,
   authorize(["admin"]),
-  registerValidation,
+  adminRegisterValidation,
   validate,
   authController.register,
 );
