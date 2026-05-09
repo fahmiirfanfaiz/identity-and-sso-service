@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # ============================================
 # Init script: Create databases for each service
 # This runs automatically on first `docker compose up`
@@ -11,4 +11,4 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" <<-EOSQL
     CREATE DATABASE auth_db;
 EOSQL
 
-echo "All databases created successfully!"
+echo "✅ All databases created successfully!"
