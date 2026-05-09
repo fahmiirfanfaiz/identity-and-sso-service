@@ -21,6 +21,7 @@ export const config = {
   internalApiKey: process.env.INTERNAL_API_KEY ?? "",
   databaseUrl: process.env.DATABASE_URL ?? "",
   directUrl: process.env.DIRECT_URL ?? "",
+  redisUrl: process.env.REDIS_URL ?? "redis://localhost:6379",
   corsAllowedOrigins: (process.env.CORS_ALLOWED_ORIGINS ?? "")
     .split(",")
     .map((o) => o.trim())

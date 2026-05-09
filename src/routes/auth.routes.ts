@@ -4,7 +4,11 @@ import { body } from "express-validator";
 import { authController } from "../controllers/auth.controller";
 import authenticate from "../middlewares/authenticate";
 import authorize from "../middlewares/authorize";
+import { createRateLimiter } from "../middlewares/rateLimit";
 import { validate } from "../middlewares/validate";
+
+const loginLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10, keyPrefix: "login" });
+const registerLimiter = createRateLimiter({ windowMs: 60 * 60 * 1000, max: 5, keyPrefix: "register" });
 
 const router = Router();
 
@@ -46,8 +50,8 @@ const updateProfileValidation = [
 ];
 
 // Public
-router.post("/register", publicRegisterValidation, validate, authController.register);
-router.post("/login", loginValidation, validate, authController.login);
+router.post("/register", registerLimiter, publicRegisterValidation, validate, authController.register);
+router.post("/login", loginLimiter, loginValidation, validate, authController.login);
 router.post("/refresh", authController.refreshToken);
 
 // Protected
