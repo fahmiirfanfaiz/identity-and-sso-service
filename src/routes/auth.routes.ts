@@ -8,16 +8,28 @@ import { validate } from "../middlewares/validate";
 
 const router = Router();
 
-const registerValidation = [
+const baseRegisterValidation = [
   body("name").trim().notEmpty().withMessage("Name is required"),
   body("email").isEmail().withMessage("Valid email is required").normalizeEmail(),
   body("password")
     .isLength({ min: 8 })
     .withMessage("Password must be at least 8 characters"),
+];
+
+const publicRegisterValidation = [
+  ...baseRegisterValidation,
   body("role")
     .optional()
-    .isIn(["mahasiswa", "mitra", "admin"])
-    .withMessage("Role must be mahasiswa, mitra, or admin"),
+    .isIn(["talent", "client"])
+    .withMessage("Role must be talent or client"),
+];
+
+const adminRegisterValidation = [
+  ...baseRegisterValidation,
+  body("role")
+    .optional()
+    .isIn(["talent", "client", "admin"])
+    .withMessage("Role must be talent, client, or admin"),
 ];
 
 const loginValidation = [
@@ -34,7 +46,7 @@ const updateProfileValidation = [
 ];
 
 // Public
-router.post("/register", registerValidation, validate, authController.register);
+router.post("/register", publicRegisterValidation, validate, authController.register);
 router.post("/login", loginValidation, validate, authController.login);
 router.post("/refresh", authController.refreshToken);
 
@@ -42,19 +54,19 @@ router.post("/refresh", authController.refreshToken);
 router.post(
   "/logout",
   authenticate,
-  authorize(["mahasiswa", "mitra", "admin"]),
+  authorize(["talent", "client", "admin"]),
   authController.logout,
 );
 router.get(
   "/profile",
   authenticate,
-  authorize(["mahasiswa", "mitra", "admin"]),
+  authorize(["talent", "client", "admin"]),
   authController.getProfile,
 );
 router.put(
   "/profile",
   authenticate,
-  authorize(["mahasiswa", "mitra", "admin"]),
+  authorize(["talent", "client", "admin"]),
   updateProfileValidation,
   validate,
   authController.updateProfile,
@@ -65,7 +77,7 @@ router.post(
   "/register/admin",
   authenticate,
   authorize(["admin"]),
-  registerValidation,
+  adminRegisterValidation,
   validate,
   authController.register,
 );

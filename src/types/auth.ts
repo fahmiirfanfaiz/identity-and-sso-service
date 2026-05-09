@@ -1,7 +1,7 @@
 export type JwtPayload = {
   id: string;
   email: string;
-  role: "mahasiswa" | "mitra" | "admin";
+  role: "talent" | "client" | "admin";
 };
 
 export type RefreshTokenPayload = {
