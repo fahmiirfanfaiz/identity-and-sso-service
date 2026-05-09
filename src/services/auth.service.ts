@@ -1,7 +1,10 @@
 import bcrypt from "bcryptjs";
 
+import jwt from "jsonwebtoken";
+
 import { config } from "../config";
 import { refreshTokenRepository } from "../repositories/refreshToken.repository";
+import { tokenBlacklistRepository } from "../repositories/tokenBlacklist.repository";
 import { userRepository } from "../repositories/user.repository";
 import type { AppRole, RequestContext, SafeUser } from "../types/auth";
 import {
@@ -133,21 +136,33 @@ export const authService = {
     return { accessToken };
   },
 
-  async logout(token: string | undefined, ctx?: RequestContext): Promise<void> {
-    if (!token) {
+  async logout(
+    refreshToken: string | undefined,
+    accessToken?: string,
+    ctx?: RequestContext,
+  ): Promise<void> {
+    if (!refreshToken) {
       throw new BadRequestError("Refresh token is required");
+    }
+
+    if (accessToken) {
+      const decoded = jwt.decode(accessToken) as { exp?: number; jti?: string } | null;
+      const now = Math.floor(Date.now() / 1000);
+      const ttl = decoded?.exp ? decoded.exp - now : 0;
+      if (decoded?.jti) {
+        await tokenBlacklistRepository.addToken(decoded.jti, ttl);
+      }
     }
 
     let userId: string | undefined;
     try {
-      const decoded = verifyRefreshToken(token);
+      const decoded = verifyRefreshToken(refreshToken);
       userId = decoded.id;
     } catch {
       // token may be invalid but we still delete it
     }
 
-    await refreshTokenRepository.deleteByToken(token);
-
+    await refreshTokenRepository.deleteByToken(refreshToken);
     await log({ action: "LOGOUT", userId, ...ctx });
   },
 
@@ -173,6 +188,12 @@ export const authService = {
     }
     await refreshTokenRepository.deleteAllByUserId(targetId);
     const updated = await userRepository.update(targetId, { isActive: false });
+
+    // Mark in Redis so existing access tokens are rejected immediately
+    const accessTokenTtl = Math.ceil(
+      parseExpiresToMs(config.jwt.accessExpiresIn) / 1000,
+    );
+    await tokenBlacklistRepository.addDeactivatedUser(targetId, accessTokenTtl);
 
     await log({
       action: "USER_DEACTIVATED",

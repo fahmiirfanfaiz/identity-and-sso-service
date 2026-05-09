@@ -1,10 +1,12 @@
+import { randomUUID } from "crypto";
+
 import jwt from "jsonwebtoken";
 
 import { config } from "../config";
 import type { JwtPayload, RefreshTokenPayload } from "../types/auth";
 
-export const generateAccessToken = (payload: JwtPayload) =>
-  jwt.sign(payload, config.jwt.secret, {
+export const generateAccessToken = (payload: Omit<JwtPayload, "jti">) =>
+  jwt.sign({ ...payload, jti: randomUUID() }, config.jwt.secret, {
     expiresIn: config.jwt.accessExpiresIn as jwt.SignOptions["expiresIn"],
   });
 
