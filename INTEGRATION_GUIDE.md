@@ -16,8 +16,8 @@ dan bisa langsung dipakai di `template-service` (port 3000 via Docker).
 
 | Email | Password | Role |
 |-------|----------|------|
-| `mahasiswa@mock.dev` | apa saja | `mahasiswa` |
-| `mitra@mock.dev` | apa saja | `mitra` |
+| `talent@mock.dev` | apa saja | `talent` |
+| `client@mock.dev` | apa saja | `client` |
 | `admin@mock.dev` | apa saja | `admin` |
 | `exists@mock.dev` | — | Simulasi email sudah terdaftar (409) |
 | apa saja | `wrong` | Simulasi password salah (401) |
@@ -57,14 +57,14 @@ Setiap access token yang digenerate auth-service berisi payload:
 {
   "id": "uuid-user",
   "email": "user@example.com",
-  "role": "mahasiswa",
+  "role": "talent",
   "iat": 1714000000,
   "exp": 1714000900
 }
 ```
 
 Setelah token diverifikasi, payload ini bisa diakses di `req.user`.
-Role yang tersedia: `mahasiswa`, `mitra`, `admin`.
+Role yang tersedia: `talent`, `client`, `admin`.
 
 ---
 
@@ -143,8 +143,8 @@ const authorize   = require('../middlewares/authorize');
 // Semua user yang sudah login bisa akses
 router.get('/projects', authenticate, listProjects);
 
-// Hanya mahasiswa yang bisa submit bid
-router.post('/bids', authenticate, authorize(['mahasiswa']), submitBid);
+// Hanya talent yang bisa submit bid
+router.post('/bids', authenticate, authorize(['talent']), submitBid);
 
 // Hanya admin
 router.delete('/projects/:id', authenticate, authorize(['admin']), deleteProject);
@@ -210,7 +210,7 @@ const getUserById = async (userId) => {
     "id": "uuid-user",
     "name": "John Doe",
     "email": "john@example.com",
-    "role": "mahasiswa",
+    "role": "talent",
     "is_active": true
   }
 }
@@ -221,20 +221,20 @@ const getUserById = async (userId) => {
 ## Contoh Flow Lengkap: Submit Bid
 
 ```
-1. Mahasiswa login
+1. Talent login
    POST http://localhost:3001/api/auth/login
    Body: { email, password }
    → Dapat: { accessToken, refreshToken }
 
-2. Mahasiswa submit bid
+2. Talent submit bid
    POST http://localhost:3003/api/bids
    Header: Authorization: Bearer <accessToken>
    Body: { projectId, amount, proposal }
 
 3. bidding-service:
    - Middleware authenticate() verify token lokal
-   - req.user = { id: "uuid", email: "...", role: "mahasiswa" }
-   - Cek role mahasiswa → boleh submit bid
+   - req.user = { id: "uuid", email: "...", role: "talent" }
+   - Cek role talent → boleh submit bid
    - Simpan bid ke database dengan user_id = req.user.id
    - Return { success: true, data: { bid } }
 ```
