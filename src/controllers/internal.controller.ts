@@ -1,3 +1,4 @@
+import type { AuditAction } from "@prisma/client";
 import type { NextFunction, Request, Response } from "express";
 
 import { internalService } from "../services/internal.service";
@@ -36,6 +37,24 @@ export const internalController = {
         success: true,
         message: "Token is valid",
         data: { user: payload },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async listAuditLogs(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { userId, action, limit } = req.query;
+      const result = await internalService.listAuditLogs({
+        userId: userId ? String(userId) : undefined,
+        action: action ? (String(action) as AuditAction) : undefined,
+        limit: limit ? Number(limit) : undefined,
+      });
+      return res.status(200).json({
+        success: true,
+        message: "Audit logs retrieved",
+        data: result,
       });
     } catch (error) {
       next(error);

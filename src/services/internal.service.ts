@@ -1,3 +1,6 @@
+import type { AuditAction, AuditLog } from "@prisma/client";
+
+import { auditLogRepository } from "../repositories/auditLog.repository";
 import { userRepository } from "../repositories/user.repository";
 import type { JwtPayload, SafeUser } from "../types/auth";
 import { BadRequestError, NotFoundError, UnauthorizedError } from "../types/errors";
@@ -37,5 +40,14 @@ export const internalService = {
     }
 
     return payload;
+  },
+
+  async listAuditLogs(params?: {
+    userId?: string;
+    action?: AuditAction;
+    limit?: number;
+  }): Promise<{ logs: AuditLog[]; total: number }> {
+    const logs = await auditLogRepository.findMany(params);
+    return { logs, total: logs.length };
   },
 };
