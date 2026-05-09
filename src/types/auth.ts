@@ -19,3 +19,8 @@ export type SafeUser = {
 };
 
 export type AppRole = JwtPayload["role"];
+
+export type RequestContext = {
+  ip?: string;
+  userAgent?: string;
+};

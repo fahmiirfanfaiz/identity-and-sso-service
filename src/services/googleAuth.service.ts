@@ -2,12 +2,13 @@ import { config } from "../config";
 import { refreshTokenRepository } from "../repositories/refreshToken.repository";
 import { userOAuthAccountRepository } from "../repositories/userOAuthAccount.repository";
 import { userRepository } from "../repositories/user.repository";
-import type { AppRole, SafeUser } from "../types/auth";
+import type { AppRole, RequestContext, SafeUser } from "../types/auth";
 import {
   BadRequestError,
   ConflictError,
   UnauthorizedError,
 } from "../types/errors";
+import { logAuditEvent } from "../utils/audit";
 import { verifyGoogleIdToken } from "../utils/googleOAuth";
 import { generateAccessToken, generateRefreshToken } from "../utils/jwt";
 import { parseExpiresToMs } from "../utils/time";
@@ -17,7 +18,10 @@ const resolveOAuthRole = (_email: string): AppRole => "client";
 const GOOGLE_PROVIDER = "google";
 
 export const googleAuthService = {
-  async login(idToken: string | undefined): Promise<{
+  async login(
+    idToken: string | undefined,
+    ctx?: RequestContext,
+  ): Promise<{
     accessToken: string;
     refreshToken: string;
     user: SafeUser;
@@ -86,6 +90,13 @@ export const googleAuthService = {
       userId: user.id,
       token: refreshToken,
       expiresAt: new Date(Date.now() + parseExpiresToMs(config.jwt.refreshExpiresIn)),
+    });
+
+    await logAuditEvent({
+      action: "LOGIN_SUCCESS",
+      userId: user.id,
+      ...ctx,
+      metadata: { provider: GOOGLE_PROVIDER },
     });
 
     return { accessToken, refreshToken, user: stripPassword(user) };
