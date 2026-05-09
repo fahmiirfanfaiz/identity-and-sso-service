@@ -734,3 +734,76 @@ describe("Deactivate user", () => {
     expect(res.status).toBe(401);
   });
 });
+
+describe("Audit logging", () => {
+  const auditEmail = `audit.user.${uniqueId}@example.com`;
+  const internalApiKey = process.env.INTERNAL_API_KEY ?? "test-internal-key";
+  let auditUserId: string;
+
+  afterAll(async () => {
+    await prisma.auditLog.deleteMany({ where: { metadata: { path: ["email"], equals: auditEmail } } });
+    await prisma.user.deleteMany({ where: { email: auditEmail } });
+  });
+
+  it("records a REGISTER event when a user registers", async () => {
+    const res = await request(app)
+      .post("/api/auth/register")
+      .send({ name: "Audit User", email: auditEmail, password: "Password123!", role: "talent" });
+    expect(res.status).toBe(201);
+    auditUserId = res.body.data.user.id;
+
+    const logs = await prisma.auditLog.findMany({
+      where: { userId: auditUserId, action: "REGISTER" },
+    });
+    expect(logs.length).toBeGreaterThan(0);
+  });
+
+  it("records a LOGIN_SUCCESS event on successful login", async () => {
+    await request(app)
+      .post("/api/auth/login")
+      .send({ email: auditEmail, password: "Password123!" });
+
+    const logs = await prisma.auditLog.findMany({
+      where: { userId: auditUserId, action: "LOGIN_SUCCESS" },
+    });
+    expect(logs.length).toBeGreaterThan(0);
+  });
+
+  it("records a LOGIN_FAILED event on wrong password", async () => {
+    await request(app)
+      .post("/api/auth/login")
+      .send({ email: auditEmail, password: "WrongPassword!" });
+
+    const logs = await prisma.auditLog.findMany({
+      where: { userId: auditUserId, action: "LOGIN_FAILED" },
+    });
+    expect(logs.length).toBeGreaterThan(0);
+  });
+
+  it("GET /internal/audit-logs returns logs", async () => {
+    const res = await request(app)
+      .get("/internal/audit-logs")
+      .set("x-internal-api-key", internalApiKey);
+    expect(res.status).toBe(200);
+    expect(res.body.data.logs).toBeInstanceOf(Array);
+    expect(res.body.data.total).toBeGreaterThan(0);
+  });
+
+  it("GET /internal/audit-logs filters by userId", async () => {
+    const res = await request(app)
+      .get(`/internal/audit-logs?userId=${auditUserId}`)
+      .set("x-internal-api-key", internalApiKey);
+    expect(res.status).toBe(200);
+    const logs = res.body.data.logs as { userId: string }[];
+    expect(logs.every((l) => l.userId === auditUserId)).toBe(true);
+  });
+
+  it("GET /internal/audit-logs filters by action", async () => {
+    const res = await request(app)
+      .get("/internal/audit-logs?action=LOGIN_SUCCESS")
+      .set("x-internal-api-key", internalApiKey);
+    expect(res.status).toBe(200);
+    const logs = res.body.data.logs as { action: string }[];
+    expect(logs.every((l) => l.action === "LOGIN_SUCCESS")).toBe(true);
+  });
+});

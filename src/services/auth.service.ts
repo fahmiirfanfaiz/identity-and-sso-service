@@ -1,14 +1,15 @@
 import bcrypt from "bcryptjs";
 
 import { config } from "../config";
+import { auditLogRepository } from "../repositories/auditLog.repository";
 import { refreshTokenRepository } from "../repositories/refreshToken.repository";
 import { userRepository } from "../repositories/user.repository";
 import type { AppRole, SafeUser } from "../types/auth";
 import {
+  BadRequestError,
   ConflictError,
   NotFoundError,
   UnauthorizedError,
-  BadRequestError,
 } from "../types/errors";
 import {
   generateAccessToken,
@@ -35,8 +36,23 @@ type UpdateProfileInput = {
   password?: string;
 };
 
+type RequestContext = {
+  ip?: string;
+  userAgent?: string;
+};
+
+const log = async (
+  data: Parameters<typeof auditLogRepository.create>[0],
+): Promise<void> => {
+  try {
+    await auditLogRepository.create(data);
+  } catch {
+    // audit log failure must not break auth flows
+  }
+};
+
 export const authService = {
-  async register(input: RegisterInput): Promise<SafeUser> {
+  async register(input: RegisterInput, ctx?: RequestContext): Promise<SafeUser> {
     const existing = await userRepository.findByEmail(input.email);
     if (existing) {
       throw new ConflictError("Email already registered");
@@ -50,10 +66,15 @@ export const authService = {
       role: input.role ?? "talent",
     });
 
+    await log({ action: "REGISTER", userId: user.id, ...ctx, metadata: { role: user.role } });
+
     return stripPassword(user);
   },
 
-  async login(input: LoginInput): Promise<{
+  async login(
+    input: LoginInput,
+    ctx?: RequestContext,
+  ): Promise<{
     accessToken: string;
     refreshToken: string;
     user: SafeUser;
@@ -61,11 +82,13 @@ export const authService = {
     const user = await userRepository.findByEmail(input.email);
 
     if (!user || !user.isActive || !user.password) {
+      await log({ action: "LOGIN_FAILED", ...ctx, metadata: { email: input.email } });
       throw new UnauthorizedError("Invalid credentials or account is inactive");
     }
 
     const isMatch = await bcrypt.compare(input.password, user.password);
     if (!isMatch) {
+      await log({ action: "LOGIN_FAILED", userId: user.id, ...ctx, metadata: { email: input.email } });
       throw new UnauthorizedError("Invalid credentials or account is inactive");
     }
 
@@ -82,10 +105,15 @@ export const authService = {
       expiresAt: new Date(Date.now() + parseExpiresToMs(config.jwt.refreshExpiresIn)),
     });
 
+    await log({ action: "LOGIN_SUCCESS", userId: user.id, ...ctx });
+
     return { accessToken, refreshToken, user: stripPassword(user) };
   },
 
-  async refreshAccessToken(token: string | undefined): Promise<{ accessToken: string }> {
+  async refreshAccessToken(
+    token: string | undefined,
+    ctx?: RequestContext,
+  ): Promise<{ accessToken: string }> {
     if (!token) {
       throw new BadRequestError("Refresh token is required");
     }
@@ -113,14 +141,27 @@ export const authService = {
       role: user.role,
     });
 
+    await log({ action: "TOKEN_REFRESH", userId: user.id, ...ctx });
+
     return { accessToken };
   },
 
-  async logout(token: string | undefined): Promise<void> {
+  async logout(token: string | undefined, ctx?: RequestContext): Promise<void> {
     if (!token) {
       throw new BadRequestError("Refresh token is required");
     }
+
+    let userId: string | undefined;
+    try {
+      const decoded = verifyRefreshToken(token);
+      userId = decoded.id;
+    } catch {
+      // token may be invalid but we still delete it
+    }
+
     await refreshTokenRepository.deleteByToken(token);
+
+    await log({ action: "LOGOUT", userId, ...ctx });
   },
 
   async getProfile(userId: string): Promise<SafeUser> {
@@ -131,7 +172,11 @@ export const authService = {
     return stripPassword(user);
   },
 
-  async deactivateUser(adminId: string, targetId: string): Promise<SafeUser> {
+  async deactivateUser(
+    adminId: string,
+    targetId: string,
+    ctx?: RequestContext,
+  ): Promise<SafeUser> {
     if (adminId === targetId) {
       throw new BadRequestError("Cannot deactivate your own account");
     }
@@ -141,6 +186,14 @@ export const authService = {
     }
     await refreshTokenRepository.deleteAllByUserId(targetId);
     const updated = await userRepository.update(targetId, { isActive: false });
+
+    await log({
+      action: "USER_DEACTIVATED",
+      userId: adminId,
+      ...ctx,
+      metadata: { targetUserId: targetId, targetEmail: user.email },
+    });
+
     return stripPassword(updated);
   },
 

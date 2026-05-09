@@ -14,6 +14,15 @@ enum UserRole {
   admin
 }
 
+enum AuditAction {
+  LOGIN_SUCCESS
+  LOGIN_FAILED
+  LOGOUT
+  REGISTER
+  TOKEN_REFRESH
+  USER_DEACTIVATED
+}
+
 model User {
   id             String             @id @default(uuid()) @db.Uuid
   name           String
@@ -127,6 +136,21 @@ model SubSkill {
   @@unique([skillId, name])
   @@index([skillId])
   @@map("sub_skills")
+}
+
+model AuditLog {
+  id        String      @id @default(uuid()) @db.Uuid
+  action    AuditAction
+  userId    String?     @map("user_id") @db.Uuid
+  ip        String?
+  userAgent String?     @map("user_agent")
+  metadata  Json?
+  createdAt DateTime    @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
 }
 
 model UsersSkill {
