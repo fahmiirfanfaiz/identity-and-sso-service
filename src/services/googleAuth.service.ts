@@ -1,5 +1,6 @@
 import { config } from "../config";
 import { refreshTokenRepository } from "../repositories/refreshToken.repository";
+import { userOAuthAccountRepository } from "../repositories/userOAuthAccount.repository";
 import { userRepository } from "../repositories/user.repository";
 import type { AppRole, SafeUser } from "../types/auth";
 import {
@@ -13,6 +14,7 @@ import { parseExpiresToMs } from "../utils/time";
 import { stripPassword } from "../utils/user";
 
 const resolveOAuthRole = (_email: string): AppRole => "client";
+const GOOGLE_PROVIDER = "google";
 
 export const googleAuthService = {
   async login(idToken: string | undefined): Promise<{
@@ -30,7 +32,11 @@ export const googleAuthService = {
       throw new UnauthorizedError("Google account email is not verified");
     }
 
-    const existing = await userRepository.findByEmail(googleUser.email);
+    const oauthAccount = await userOAuthAccountRepository.findByProviderAccount(
+      GOOGLE_PROVIDER,
+      googleUser.subject,
+    );
+    const existing = oauthAccount?.user ?? (await userRepository.findByEmail(googleUser.email));
     let user;
 
     if (!existing) {
@@ -38,14 +44,28 @@ export const googleAuthService = {
         name: googleUser.name,
         email: googleUser.email,
         role: resolveOAuthRole(googleUser.email),
-        googleSubject: googleUser.subject,
       });
-    } else if (existing.googleSubject && existing.googleSubject !== googleUser.subject) {
-      throw new ConflictError("Email is already linked to another Google account");
-    } else if (!existing.googleSubject) {
+      await userOAuthAccountRepository.create({
+        user: { connect: { id: user.id } },
+        provider: GOOGLE_PROVIDER,
+        providerId: googleUser.subject,
+      });
+    } else if (!oauthAccount) {
+      const linkedGoogleAccount = await userOAuthAccountRepository.findByUserAndProvider(
+        existing.id,
+        GOOGLE_PROVIDER,
+      );
+      if (linkedGoogleAccount) {
+        throw new ConflictError("Email is already linked to another Google account");
+      }
+
       user = await userRepository.update(existing.id, {
-        googleSubject: googleUser.subject,
         name: existing.name || googleUser.name,
+      });
+      await userOAuthAccountRepository.create({
+        user: { connect: { id: user.id } },
+        provider: GOOGLE_PROVIDER,
+        providerId: googleUser.subject,
       });
     } else {
       user = existing;
