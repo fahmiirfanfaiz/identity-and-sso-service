@@ -9,7 +9,7 @@ module.exports = tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    files: ["src/**/*.ts"],
+    files: ["src/**/*.ts", "tests/**/*.ts"],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: "module",
