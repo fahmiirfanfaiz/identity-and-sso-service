@@ -81,5 +81,11 @@ router.post(
   validate,
   authController.register,
 );
+router.patch(
+  "/users/:id/deactivate",
+  authenticate,
+  authorize(["admin"]),
+  authController.deactivateUser,
+);
 
 export default router;

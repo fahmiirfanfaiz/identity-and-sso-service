@@ -131,6 +131,19 @@ export const authService = {
     return stripPassword(user);
   },
 
+  async deactivateUser(adminId: string, targetId: string): Promise<SafeUser> {
+    if (adminId === targetId) {
+      throw new BadRequestError("Cannot deactivate your own account");
+    }
+    const user = await userRepository.findById(targetId);
+    if (!user) {
+      throw new NotFoundError("User not found");
+    }
+    await refreshTokenRepository.deleteAllByUserId(targetId);
+    const updated = await userRepository.update(targetId, { isActive: false });
+    return stripPassword(updated);
+  },
+
   async updateProfile(userId: string, input: UpdateProfileInput): Promise<SafeUser> {
     const existing = await userRepository.findById(userId);
     if (!existing) {

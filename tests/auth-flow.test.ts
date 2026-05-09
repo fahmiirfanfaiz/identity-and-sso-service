@@ -642,3 +642,95 @@ describe("CORS", () => {
     expect(res.headers["access-control-allow-methods"]).toBeDefined();
   });
 });
+
+describe("Deactivate user", () => {
+  let adminToken: string;
+  let adminUserId: string;
+  let targetUserId: string;
+  let targetRefreshToken: string;
+  const deactivateAdminEmail = `deactivate.admin.${uniqueId}@example.com`;
+  const targetEmail = `deactivate.target.${uniqueId}@example.com`;
+
+  beforeAll(async () => {
+    const hashedPassword = await bcrypt.hash("Password123!", 12);
+    const admin = await prisma.user.create({
+      data: { name: "Deactivate Admin", email: deactivateAdminEmail, password: hashedPassword, role: "admin", isActive: true },
+    });
+    adminUserId = admin.id;
+
+    const adminLoginRes = await request(app)
+      .post("/api/auth/login")
+      .send({ email: deactivateAdminEmail, password: "Password123!" });
+    adminToken = adminLoginRes.body.data.accessToken;
+
+    await request(app)
+      .post("/api/auth/register")
+      .send({ name: "Target User", email: targetEmail, password: "Password123!", role: "talent" });
+
+    const targetLoginRes = await request(app)
+      .post("/api/auth/login")
+      .send({ email: targetEmail, password: "Password123!" });
+    targetUserId = targetLoginRes.body.data.user.id;
+    targetRefreshToken = targetLoginRes.body.data.refreshToken;
+  });
+
+  afterAll(async () => {
+    await prisma.user.deleteMany({ where: { email: { in: [deactivateAdminEmail, targetEmail] } } });
+  });
+
+  it("returns 400 when admin tries to deactivate themselves", async () => {
+    const res = await request(app)
+      .patch(`/api/auth/users/${adminUserId}/deactivate`)
+      .set("Authorization", `Bearer ${adminToken}`);
+    expect(res.status).toBe(400);
+  });
+
+  it("returns 404 for a non-existent user", async () => {
+    const res = await request(app)
+      .patch("/api/auth/users/00000000-0000-0000-0000-000000000000/deactivate")
+      .set("Authorization", `Bearer ${adminToken}`);
+    expect(res.status).toBe(404);
+  });
+
+  it("returns 403 when a non-admin tries to deactivate", async () => {
+    const talentEmail = `deactivate.talent.${uniqueId}@example.com`;
+    try {
+      await request(app)
+        .post("/api/auth/register")
+        .send({ name: "Talent", email: talentEmail, password: "Password123!", role: "talent" });
+      const loginRes = await request(app)
+        .post("/api/auth/login")
+        .send({ email: talentEmail, password: "Password123!" });
+      const talentToken = loginRes.body.data.accessToken;
+
+      const res = await request(app)
+        .patch(`/api/auth/users/${targetUserId}/deactivate`)
+        .set("Authorization", `Bearer ${talentToken}`);
+      expect(res.status).toBe(403);
+    } finally {
+      await prisma.user.deleteMany({ where: { email: talentEmail } });
+    }
+  });
+
+  it("returns 200 and sets isActive to false", async () => {
+    const res = await request(app)
+      .patch(`/api/auth/users/${targetUserId}/deactivate`)
+      .set("Authorization", `Bearer ${adminToken}`);
+    expect(res.status).toBe(200);
+    expect(res.body.data.user.isActive).toBe(false);
+  });
+
+  it("deactivated user cannot login", async () => {
+    const res = await request(app)
+      .post("/api/auth/login")
+      .send({ email: targetEmail, password: "Password123!" });
+    expect(res.status).toBe(401);
+  });
+
+  it("deactivated user's refresh token is revoked", async () => {
+    const res = await request(app)
+      .post("/api/auth/refresh")
+      .send({ refreshToken: targetRefreshToken });
+    expect(res.status).toBe(401);
+  });
+});

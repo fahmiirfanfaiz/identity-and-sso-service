@@ -22,4 +22,7 @@ export const refreshTokenRepository = {
 
   deleteByToken: (token: string) =>
     prisma.refreshToken.deleteMany({ where: { token } }),
+
+  deleteAllByUserId: (userId: string) =>
+    prisma.refreshToken.deleteMany({ where: { userId } }),
 };

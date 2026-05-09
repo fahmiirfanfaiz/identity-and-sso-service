@@ -67,6 +67,19 @@ export const authController = {
     }
   },
 
+  async deactivateUser(req: Request, res: Response, next: NextFunction) {
+    try {
+      const user = await authService.deactivateUser(req.user!.id, String(req.params.id));
+      return res.status(200).json({
+        success: true,
+        message: "User deactivated successfully",
+        data: { user },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async updateProfile(req: Request, res: Response, next: NextFunction) {
     try {
       const user = await authService.updateProfile(req.user!.id, req.body);
