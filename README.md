@@ -44,7 +44,7 @@ Tanpa Kelompok 1, sistem microservices ini tidak akan memiliki identitas yang je
 
 ## Ringkasan Tanggung Jawab (Kelompok 1 — The Gatekeeper)
 
-- Autentikasi user (role yang tersedia: `client`, `freelancer`, `admin`).
+- Autentikasi user (role yang tersedia: `talent`, `client`, `admin`).
 - Mengelola profil user (lihat & update profil sendiri).
 - Mengeluarkan dan memvalidasi **JWT Access Token** untuk dipakai service lain.
 - Mengelola **Refresh Token** (disimpan ke database) untuk proses *refresh* access token.
