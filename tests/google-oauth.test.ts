@@ -77,6 +77,17 @@ describe("Google OAuth - POST /api/auth/google", () => {
     expect(res.body.message).toMatch(/not verified/i);
   });
 
+  it("returns 401 when Google idToken verification fails", async () => {
+    vi.mocked(verifyGoogleIdToken).mockRejectedValueOnce(new Error("invalid token"));
+
+    const res = await request(app)
+      .post("/api/auth/google")
+      .send({ idToken: "fake-id-token" });
+
+    expect(res.status).toBe(401);
+    expect(res.body.message).toMatch(/invalid google idtoken/i);
+  });
+
   it("creates a new user and returns tokens on first Google login", async () => {
     vi.mocked(verifyGoogleIdToken).mockResolvedValueOnce(mockGoogleUser());
 
