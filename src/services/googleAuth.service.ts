@@ -30,7 +30,12 @@ export const googleAuthService = {
       throw new BadRequestError("Google idToken is required");
     }
 
-    const googleUser = await verifyGoogleIdToken(idToken);
+    let googleUser;
+    try {
+      googleUser = await verifyGoogleIdToken(idToken);
+    } catch {
+      throw new UnauthorizedError("Invalid Google idToken");
+    }
 
     if (!googleUser.emailVerified) {
       throw new UnauthorizedError("Google account email is not verified");
