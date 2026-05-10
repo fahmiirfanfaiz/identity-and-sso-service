@@ -42,20 +42,39 @@ Lalu buka: http://localhost:8080
 #### 5. Akun Uji Postman
 Gunakan akun ini untuk testing login dan endpoint protected:
 
-- Email: `testing120145@gmail.com`
-- Username: `softarc2026`
-- Password: `2026softarc`
+- Email: `test@example.com`
+- Name: `Test User`
+- Password: `Password123!`
+- Role: `talent`
 
-Catatan: endpoint login tetap menggunakan `email` dan `password`; `username` hanya dipakai sebagai label akun uji di dokumentasi dan environment Postman.
+Untuk flow admin:
+
+- Admin email: `admin@example.com`
+- Admin password: `Password123!`
+
+Catatan: endpoint login tetap menggunakan `email` dan `password`; field `name` dan `role` dipakai saat register.
 
 Jika kamu memakai Postman environment, simpan variabel berikut:
 
-- `baseUrl` → `http://localhost:3001`
-- `email` → `testing120145@gmail.com`
-- `username` → `softarc2026`
-- `password` → `2026softarc`
+- `baseUrl` → `http://localhost:3000`
+- `email` → `test@example.com`
+- `password` → `Password123!`
+- `name` → `Test User`
+- `role` → `talent`
+- `googleIdToken` → isi jika ingin tes Google OAuth
 - `accessToken` → isi setelah login
 - `refreshToken` → isi setelah login
+- `adminEmail` → `admin@example.com`
+- `adminPassword` → `Password123!`
+- `adminAccessToken` → isi setelah admin login
+- `adminRefreshToken` → isi setelah admin login
+- `userId` → bisa diisi dari response login/register
+- `adminUserId` → bisa diisi dari response admin login
+- `targetUserId` → user yang ingin dideactivate
+- `internalApiKey` → isi sesuai `.env`
+- `auditUserId` → opsional untuk filter audit logs
+- `auditAction` → opsional untuk filter audit logs
+- `auditLimit` → opsional untuk filter audit logs
 
 ## Testing dengan Swagger UI
 
@@ -108,7 +127,7 @@ Authorization: Bearer {{accessToken}}
 ```
 
 Catatan:
-- Pastikan `baseUrl` di environment menunjuk ke service yang sedang berjalan (default: `http://localhost:3001`).
+- Pastikan `baseUrl` di environment menunjuk ke service yang sedang berjalan (default: `http://localhost:3000`).
 - Jika service belum diimplementasikan, request akan mengembalikan error koneksi atau 404.
 - Jika ingin otomatis refresh token saat expired, saya bisa tambahkan pre-request script di tingkat koleksi.
 

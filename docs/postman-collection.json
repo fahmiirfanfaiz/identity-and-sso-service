@@ -10,6 +10,44 @@
       "name": "Authentication",
       "item": [
         {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{name}}\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"role\": \"{{role}}\"\n}"
+            },
+            "description": "Mendaftarkan user baru untuk testing lokal."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = (() => { try { return pm.response.json(); } catch(e) { return null; } })();",
+                  "pm.test('Response status is 201', function () { pm.expect(pm.response.code).to.eql(201); });",
+                  "if (json && json.data && json.data.user && json.data.user.id) {",
+                  "  pm.environment.set('userId', json.data.user.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Login User",
           "request": {
             "method": "POST",
@@ -28,7 +66,7 @@
               "mode": "raw",
               "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
             },
-            "description": "Login memakai akun uji dari environment Postman. Hasil response sebaiknya disimpan ke variabel accessToken dan refreshToken."
+            "description": "Login user dan simpan accessToken / refreshToken ke environment."
           },
           "response": [],
           "event": [
@@ -38,17 +76,57 @@
                 "type": "text/javascript",
                 "exec": [
                   "const json = (() => { try { return pm.response.json(); } catch(e) { return null; } })();",
-                  "pm.test('Response status is 200 or 201', function () { pm.expect(pm.response.code).to.be.oneOf([200,201]); });",
-                  "if (json) {",
-                  "  // support responses with { data: { accessToken, refreshToken, user } } or { accessToken, refreshToken }",
-                  "  const access = (json.data && json.data.accessToken) || json.accessToken || (json.token && json.token.accessToken) || '';",
-                  "  const refresh = (json.data && json.data.refreshToken) || json.refreshToken || (json.token && json.token.refreshToken) || '';",
-                  "  const uid = (json.data && (json.data.user && json.data.user.id)) || json.userId || json.id || '';",
+                  "pm.test('Response status is 200', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "if (json && json.data) {",
+                  "  const access = json.data.accessToken || '';",
+                  "  const refresh = json.data.refreshToken || '';",
+                  "  const uid = json.data.user && json.data.user.id ? json.data.user.id : '';",
                   "  if (access) pm.environment.set('accessToken', access);",
                   "  if (refresh) pm.environment.set('refreshToken', refresh);",
                   "  if (uid) pm.environment.set('userId', uid);",
-                  "} else {",
-                  "  // no JSON — do not modify environment",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Google Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/google",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "google"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idToken\": \"{{googleIdToken}}\"\n}"
+            },
+            "description": "Login menggunakan Google ID token."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = (() => { try { return pm.response.json(); } catch(e) { return null; } })();",
+                  "pm.test('Response status is 200', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "if (json && json.data) {",
+                  "  const access = json.data.accessToken || '';",
+                  "  const refresh = json.data.refreshToken || '';",
+                  "  const uid = json.data.user && json.data.user.id ? json.data.user.id : '';",
+                  "  if (access) pm.environment.set('accessToken', access);",
+                  "  if (refresh) pm.environment.set('refreshToken', refresh);",
+                  "  if (uid) pm.environment.set('userId', uid);",
                   "}"
                 ]
               }
@@ -84,12 +162,9 @@
                 "type": "text/javascript",
                 "exec": [
                   "const json = (() => { try { return pm.response.json(); } catch(e) { return null; } })();",
-                  "pm.test('Response status is 200', function () { pm.expect(pm.response.code).to.be.oneOf([200,201]); });",
-                  "if (json) {",
-                  "  const access = (json.data && json.data.accessToken) || json.accessToken || '';",
-                  "  const refresh = (json.data && json.data.refreshToken) || json.refreshToken || '';",
-                  "  if (access) pm.environment.set('accessToken', access);",
-                  "  if (refresh) pm.environment.set('refreshToken', refresh);",
+                  "pm.test('Response status is 200', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "if (json && json.data && json.data.accessToken) {",
+                  "  pm.environment.set('accessToken', json.data.accessToken);",
                   "}"
                 ]
               }
@@ -97,7 +172,52 @@
           ]
         },
         {
-          "name": "Register User",
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "logout"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "description": "Logout user dan hapus refresh token."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.unset('accessToken');",
+                  "pm.environment.unset('refreshToken');",
+                  "pm.test('Logout response status is 200', function () { pm.expect(pm.response.code).to.eql(200); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Administration",
+      "item": [
+        {
+          "name": "Login Admin",
           "request": {
             "method": "POST",
             "header": [
@@ -107,15 +227,81 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/auth/register",
+              "raw": "{{baseUrl}}/api/auth/login",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "register"]
+              "path": ["api", "auth", "login"]
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"newuser@example.com\",\n  \"password\": \"secure_password_123\",\n  \"name\": \"New User\",\n  \"role\": \"client\"\n}"
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
             },
-            "description": "Mendaftarkan akun baru sesuai kontrak OpenAPI."
+            "description": "Login admin dan simpan token admin ke environment."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = (() => { try { return pm.response.json(); } catch(e) { return null; } })();",
+                  "pm.test('Response status is 200', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "if (json && json.data) {",
+                  "  const access = json.data.accessToken || '';",
+                  "  const refresh = json.data.refreshToken || '';",
+                  "  const uid = json.data.user && json.data.user.id ? json.data.user.id : '';",
+                  "  if (access) pm.environment.set('adminAccessToken', access);",
+                  "  if (refresh) pm.environment.set('adminRefreshToken', refresh);",
+                  "  if (uid) pm.environment.set('adminUserId', uid);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Register Admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminAccessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register/admin",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register", "admin"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{name}}\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"role\": \"admin\"\n}"
+            },
+            "description": "Registrasi admin baru via admin access token."
+          },
+          "response": []
+        },
+        {
+          "name": "Deactivate User",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminAccessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/users/{{targetUserId}}/deactivate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "users", "{{targetUserId}}", "deactivate"]
+            },
+            "description": "Menonaktifkan user lain dari akun admin."
           },
           "response": []
         }
@@ -169,39 +355,6 @@
             "description": "Memperbarui profil user yang sedang login."
           },
           "response": []
-        },
-        {
-          "name": "Logout",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/auth/logout",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "logout"]
-            },
-            "description": "Mengakhiri sesi login dan menghapus refresh token."
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.environment.unset('accessToken');",
-                  "pm.environment.unset('refreshToken');",
-                  "pm.test('Tokens cleared from environment', function () { pm.expect(pm.environment.get('accessToken')).to.be.oneOf([undefined, '']); });",
-                  "pm.test('Logout response status is 200 or 204', function () { pm.expect(pm.response.code).to.be.oneOf([200,204]); });"
-                ]
-              }
-            }
-          ]
         }
       ]
     },
@@ -212,13 +365,37 @@
           "name": "Get User by ID",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "x-internal-api-key",
+                "value": "{{internalApiKey}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/internal/users/{{userId}}",
               "host": ["{{baseUrl}}"],
               "path": ["internal", "users", "{{userId}}"]
             },
             "description": "Endpoint internal untuk mengambil detail user berdasarkan ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-internal-api-key",
+                "value": "{{internalApiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/internal/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["internal", "users"]
+            },
+            "description": "Mengambil daftar user untuk sinkronisasi internal."
           },
           "response": []
         },
@@ -230,6 +407,10 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "x-internal-api-key",
+                "value": "{{internalApiKey}}"
               }
             ],
             "url": {
@@ -241,7 +422,40 @@
               "mode": "raw",
               "raw": "{\n  \"token\": \"{{accessToken}}\"\n}"
             },
-            "description": "Validasi token secara internal."
+            "description": "Validasi access token secara internal."
+          },
+          "response": []
+        },
+        {
+          "name": "Audit Logs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-internal-api-key",
+                "value": "{{internalApiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/internal/audit-logs?userId={{auditUserId}}&action={{auditAction}}&limit={{auditLimit}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["internal", "audit-logs"],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "{{auditUserId}}"
+                },
+                {
+                  "key": "action",
+                  "value": "{{auditAction}}"
+                },
+                {
+                  "key": "limit",
+                  "value": "{{auditLimit}}"
+                }
+              ]
+            },
+            "description": "Mengambil audit logs dengan filter opsional."
           },
           "response": []
         }
@@ -251,18 +465,26 @@
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://localhost:3001"
+      "value": "http://localhost:3000"
     },
     {
       "key": "email",
-      "value": "testing120145@gmail.com"
+      "value": "test@example.com"
     },
     {
       "key": "password",
-      "value": "2026softarc"
+      "value": "Password123!"
     },
     {
-      "key": "accessToken",
+      "key": "name",
+      "value": "Test User"
+    },
+    {
+      "key": "role",
+      "value": "talent"
+    },
+    {
+      "key": "googleIdToken",
       "value": ""
     },
     {
@@ -270,8 +492,52 @@
       "value": ""
     },
     {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "adminEmail",
+      "value": "admin@example.com"
+    },
+    {
+      "key": "adminPassword",
+      "value": "Password123!"
+    },
+    {
+      "key": "adminAccessToken",
+      "value": ""
+    },
+    {
+      "key": "adminRefreshToken",
+      "value": ""
+    },
+    {
       "key": "userId",
-      "value": "550e8400-e29b-41d4-a716-446655440000"
+      "value": ""
+    },
+    {
+      "key": "adminUserId",
+      "value": ""
+    },
+    {
+      "key": "targetUserId",
+      "value": ""
+    },
+    {
+      "key": "internalApiKey",
+      "value": "change-this-internal-api-key"
+    },
+    {
+      "key": "auditUserId",
+      "value": ""
+    },
+    {
+      "key": "auditAction",
+      "value": "LOGIN_SUCCESS"
+    },
+    {
+      "key": "auditLimit",
+      "value": "20"
     }
   ]
 }

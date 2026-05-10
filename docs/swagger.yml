@@ -18,8 +18,8 @@ info:
     - Service-to-service internal API
 
     ## Role yang Tersedia
-    - `client` - Pengguna reguler (mitra/klien)
-    - `freelancer` - Pengguna freelancer (mahasiswa)
+    - `talent` - Pengguna freelancer / mahasiswa
+    - `client` - Pengguna reguler / pihak pemesan
     - `admin` - Administrator
 
   version: 1.0.0-alpha
@@ -31,19 +31,21 @@ info:
     url: https://opensource.org/licenses/ISC
 
 servers:
-  - url: http://localhost:3001
+  - url: http://localhost:3000
     description: Development (Host machine)
     variables:
       port:
-        default: '3001'
-  - url: http://localhost:5000
+        default: '3000'
+  - url: http://localhost:3000
     description: Development (Direct run without Docker)
   - url: http://auth-service:3000
     description: Docker internal network
 
 tags:
   - name: Authentication
-    description: Public endpoints untuk login, register, refresh token
+    description: Public endpoints untuk login, register, refresh token, dan Google OAuth
+  - name: Administration
+    description: Endpoint khusus admin untuk registrasi dan deaktivasi user
   - name: User Profile
     description: Protected endpoints untuk mengelola profil user
   - name: Internal
@@ -55,7 +57,7 @@ paths:
       tags:
         - Authentication
       summary: Register akun baru
-      description: Membuat akun user baru di sistem
+      description: Membuat akun user baru di sistem. Role default adalah `talent` jika tidak dikirim.
       operationId: registerUser
       requestBody:
         required: true
@@ -64,13 +66,13 @@ paths:
             schema:
               $ref: '#/components/schemas/RegisterRequest'
             example:
-              email: john@example.com
-              password: secure_password_123
-              name: John Doe
-              role: client
+              name: Test User
+              email: test@example.com
+              password: Password123!
+              role: talent
       responses:
         '201':
-          description: Akun berhasil dibuat
+          description: User registered successfully
           content:
             application/json:
               schema:
@@ -106,7 +108,7 @@ paths:
       summary: Login user
       description: |
         Autentikasi user dan dapatkan access token serta refresh token.
-        Untuk testing awal, gunakan mock users yang tersedia.
+        Endpoint ini memakai rate limit dan menolak user yang tidak aktif.
       operationId: loginUser
       requestBody:
         required: true
@@ -115,11 +117,11 @@ paths:
             schema:
               $ref: '#/components/schemas/LoginRequest'
             example:
-              email: client@mock.dev
-              password: apa saja
+              email: test@example.com
+              password: Password123!
       responses:
         '200':
-          description: Login berhasil
+          description: Login successful
           content:
             application/json:
               schema:
@@ -143,6 +145,75 @@ paths:
                   - email
                   - password
 
+  /api/auth/google:
+    post:
+      tags:
+        - Authentication
+      summary: Login with Google OAuth
+      description: Login menggunakan Google ID token dan menghasilkan access token serta refresh token.
+      operationId: loginWithGoogle
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoogleAuthRequest'
+            example:
+              idToken: google-id-token-here
+      responses:
+        '200':
+          description: Google login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoogleAuthResponse'
+        '400':
+          description: Request body tidak valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Google token tidak valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/register/admin:
+    post:
+      tags:
+        - Administration
+      summary: Register admin user
+      description: Membuat akun admin. Endpoint ini hanya bisa diakses admin yang sedang login.
+      operationId: registerAdminUser
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminRegisterRequest'
+            example:
+              name: Admin User
+              email: admin@example.com
+              password: Password123!
+              role: admin
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterResponse'
+        '401':
+          description: Token tidak valid atau tidak memiliki hak akses admin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/auth/refresh:
     post:
       tags:
@@ -160,7 +231,7 @@ paths:
               refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
       responses:
         '200':
-          description: Token berhasil diperbarui
+          description: Access token refreshed
           content:
             application/json:
               schema:
@@ -188,26 +259,28 @@ paths:
       tags:
         - User Profile
       summary: Logout user
-      description: Mengakhiri sesi dan menghapus refresh token
+      description: Mengakhiri sesi, menghapus refresh token, dan membatalkan access token yang masih aktif.
       operationId: logoutUser
       security:
         - BearerAuth: []
       requestBody:
-        required: false
+        required: true
         content:
           application/json:
             schema:
-              type: object
+              $ref: '#/components/schemas/LogoutRequest'
+            example:
+              refreshToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
       responses:
         '200':
-          description: Logout berhasil
+          description: Logged out successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/SuccessMessage'
               example:
                 success: true
-                message: Logout berhasil, refresh token dihapus
+                message: Logged out successfully
         '401':
           description: Token tidak valid atau sudah expired
           content:
@@ -226,7 +299,7 @@ paths:
         - BearerAuth: []
       responses:
         '200':
-          description: Profil user berhasil diambil
+          description: Profile retrieved successfully
           content:
             application/json:
               schema:
@@ -257,7 +330,7 @@ paths:
               password: new_secure_password_123
       responses:
         '200':
-          description: Profil berhasil diperbarui
+          description: Profile updated successfully
           content:
             application/json:
               schema:
@@ -276,6 +349,43 @@ paths:
                   - password minimal 8 karakter
         '401':
           description: Token tidak valid atau sudah expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/users/{id}/deactivate:
+    patch:
+      tags:
+        - Administration
+      summary: Deactivate user
+      description: Menonaktifkan user lain. Endpoint ini hanya untuk admin.
+      operationId: deactivateUser
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: User ID
+          example: 550e8400-e29b-41d4-a716-446655440000
+      responses:
+        '200':
+          description: User deactivated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeactivateUserResponse'
+        '400':
+          description: Tidak boleh menonaktifkan akun sendiri
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User tidak ditemukan
           content:
             application/json:
               schema:
@@ -301,7 +411,7 @@ paths:
           example: 550e8400-e29b-41d4-a716-446655440000
       responses:
         '200':
-          description: User ditemukan
+          description: User found
           content:
             application/json:
               schema:
@@ -315,6 +425,57 @@ paths:
               example:
                 success: false
                 message: User tidak ditemukan
+
+  /internal/users:
+    get:
+      tags:
+        - Internal
+      summary: List users (internal)
+      description: Mengambil seluruh user untuk kebutuhan sinkronisasi internal.
+      operationId: listUsers
+      responses:
+        '200':
+          description: Users retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalUsersResponse'
+
+  /internal/audit-logs:
+    get:
+      tags:
+        - Internal
+      summary: List audit logs (internal)
+      description: Mengambil audit logs dengan filter opsional.
+      operationId: listAuditLogs
+      parameters:
+        - name: userId
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter berdasarkan user ID
+        - name: action
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter berdasarkan aksi audit
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+          description: Jumlah data maksimum
+      responses:
+        '200':
+          description: Audit logs retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLogListResponse'
 
   /internal/validate-token:
     post:
@@ -337,7 +498,7 @@ paths:
               token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
       responses:
         '200':
-          description: Token valid
+          description: Token is valid
           content:
             application/json:
               schema:
@@ -367,10 +528,9 @@ components:
     RegisterRequest:
       type: object
       required:
+        - name
         - email
         - password
-        - name
-        - role
       properties:
         email:
           type: string
@@ -390,9 +550,34 @@ components:
           example: John Doe
         role:
           type: string
-          enum: [client, freelancer, admin]
-          description: Role user (admin hanya bisa dibuat oleh admin)
-          example: client
+          enum: [talent, client]
+          description: Role user untuk registrasi publik
+          example: talent
+
+    AdminRegisterRequest:
+      type: object
+      required:
+        - name
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: admin@example.com
+        password:
+          type: string
+          minLength: 8
+          example: Password123!
+        name:
+          type: string
+          minLength: 3
+          maxLength: 100
+          example: Admin User
+        role:
+          type: string
+          enum: [talent, client, admin]
+          example: admin
 
     LoginRequest:
       type: object
@@ -404,11 +589,11 @@ components:
           type: string
           format: email
           description: Email user
-          example: client@mock.dev
+          example: test@example.com
         password:
           type: string
           description: Password user
-          example: apa saja
+          example: Password123!
 
     RefreshTokenRequest:
       type: object
@@ -418,6 +603,26 @@ components:
         refreshToken:
           type: string
           description: Refresh token yang diperoleh dari login
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+    GoogleAuthRequest:
+      type: object
+      required:
+        - idToken
+      properties:
+        idToken:
+          type: string
+          description: Google ID token
+          example: google-id-token-here
+
+    LogoutRequest:
+      type: object
+      required:
+        - refreshToken
+      properties:
+        refreshToken:
+          type: string
+          description: Refresh token yang ingin dihapus
           example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
     UpdateProfileRequest:
@@ -451,7 +656,6 @@ components:
       properties:
         id:
           type: string
-          format: uuid
           description: User ID (UUID)
           example: 550e8400-e29b-41d4-a716-446655440000
         email:
@@ -465,29 +669,26 @@ components:
           example: John Doe
         role:
           type: string
-          enum: [client, freelancer, admin]
+          enum: [talent, client, admin]
           description: Role user
-          example: client
+          example: talent
+        isActive:
+          type: boolean
+          description: Status aktif user
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp pembuatan akun
+          example: '2026-05-01T10:00:00Z'
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp update terakhir
+          example: '2026-05-05T14:30:00Z'
 
     UserProfile:
-      allOf:
-        - $ref: '#/components/schemas/User'
-        - type: object
-          properties:
-            is_active:
-              type: boolean
-              description: Status aktif user
-              example: true
-            created_at:
-              type: string
-              format: date-time
-              description: Timestamp pembuatan akun
-              example: '2026-05-01T10:00:00Z'
-            updated_at:
-              type: string
-              format: date-time
-              description: Timestamp update terakhir
-              example: '2026-05-05T14:30:00Z'
+      $ref: '#/components/schemas/User'
 
     RegisterResponse:
       type: object
@@ -497,9 +698,30 @@ components:
           example: true
         message:
           type: string
-          example: Akun berhasil dibuat
+          example: User registered successfully
         data:
           $ref: '#/components/schemas/User'
+
+    GoogleAuthResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Google login successful
+        data:
+          type: object
+          properties:
+            accessToken:
+              type: string
+              example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+            refreshToken:
+              type: string
+              example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+            user:
+              $ref: '#/components/schemas/User'
 
     LoginResponse:
       type: object
@@ -509,7 +731,7 @@ components:
           example: true
         message:
           type: string
-          example: Login berhasil
+          example: Login successful
         data:
           type: object
           properties:
@@ -523,10 +745,6 @@ components:
               example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
             user:
               $ref: '#/components/schemas/User'
-        _mock:
-          type: boolean
-          description: Flag penanda mock mode (hanya ada di mode testing)
-          example: true
 
     RefreshTokenResponse:
       type: object
@@ -536,14 +754,11 @@ components:
           example: true
         message:
           type: string
-          example: Token berhasil diperbarui
+          example: Access token refreshed
         data:
           type: object
           properties:
             accessToken:
-              type: string
-              example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-            refreshToken:
               type: string
               example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
@@ -555,9 +770,12 @@ components:
           example: true
         message:
           type: string
-          example: Profil user berhasil diambil
+          example: Profile retrieved successfully
         data:
-          $ref: '#/components/schemas/UserProfile'
+          type: object
+          properties:
+            user:
+              $ref: '#/components/schemas/UserProfile'
 
     UpdateProfileResponse:
       type: object
@@ -567,9 +785,12 @@ components:
           example: true
         message:
           type: string
-          example: Profil berhasil diperbarui
+          example: Profile updated successfully
         data:
-          $ref: '#/components/schemas/UserProfile'
+          type: object
+          properties:
+            user:
+              $ref: '#/components/schemas/UserProfile'
 
     InternalUserResponse:
       type: object
@@ -579,9 +800,92 @@ components:
           example: true
         message:
           type: string
-          example: User ditemukan
+          example: User found
         data:
-          $ref: '#/components/schemas/UserProfile'
+          type: object
+          properties:
+            user:
+              $ref: '#/components/schemas/UserProfile'
+
+    InternalUsersResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Users retrieved
+        data:
+          type: object
+          properties:
+            users:
+              type: array
+              items:
+                $ref: '#/components/schemas/UserProfile'
+            total:
+              type: integer
+              example: 2
+
+    AuditLog:
+      type: object
+      properties:
+        id:
+          type: string
+          example: log_01
+        userId:
+          type: string
+          example: 550e8400-e29b-41d4-a716-446655440000
+        action:
+          type: string
+          example: LOGIN_SUCCESS
+        ip:
+          type: string
+          example: 127.0.0.1
+        userAgent:
+          type: string
+          example: PostmanRuntime/7.43.0
+        metadata:
+          type: object
+          additionalProperties: true
+        createdAt:
+          type: string
+          format: date-time
+
+    AuditLogListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Audit logs retrieved
+        data:
+          type: object
+          properties:
+            logs:
+              type: array
+              items:
+                $ref: '#/components/schemas/AuditLog'
+            total:
+              type: integer
+              example: 10
+
+    DeactivateUserResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: User deactivated successfully
+        data:
+          type: object
+          properties:
+            user:
+              $ref: '#/components/schemas/UserProfile'
 
     ValidateTokenResponse:
       type: object
@@ -591,30 +895,27 @@ components:
           example: true
         message:
           type: string
-          example: Token valid
+          example: Token is valid
         data:
           type: object
           properties:
-            id:
-              type: string
-              format: uuid
-              example: 550e8400-e29b-41d4-a716-446655440000
-            email:
-              type: string
-              format: email
-              example: john@example.com
-            role:
-              type: string
-              enum: [client, freelancer, admin]
-              example: freelancer
-            iat:
-              type: integer
-              description: Issued at (Unix timestamp)
-              example: 1714000000
-            exp:
-              type: integer
-              description: Expiration time (Unix timestamp)
-              example: 1714003600
+            user:
+              type: object
+              properties:
+                id:
+                  type: string
+                  example: 550e8400-e29b-41d4-a716-446655440000
+                email:
+                  type: string
+                  format: email
+                  example: john@example.com
+                role:
+                  type: string
+                  enum: [talent, client, admin]
+                  example: talent
+                jti:
+                  type: string
+                  example: 01JXYZABCDE
 
     SuccessMessage:
       type: object
