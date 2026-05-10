@@ -1,41 +1,28 @@
-FROM node:20-alpine AS base
-
+# ============================================
+# Identity & SSO Service - Dockerfile
+# ============================================
+FROM node:20-alpine AS deps
 WORKDIR /app
-
-# Copy package files
 COPY package*.json ./
-COPY tsconfig.json ./
+COPY prisma ./prisma
+RUN npm ci && \
+    npx prisma generate && \
+    cp -R node_modules /dev_modules && \
+    npm prune --omit=dev && \
+    cp -R node_modules /prod_modules
 
-# Install dependencies
-RUN npm ci
-
-# Development stage
-FROM base AS dev
-
-COPY src ./src
-
-EXPOSE 3000
-
-CMD ["npm", "run", "dev"]
-
-# Build stage
-FROM base AS build
-
-COPY src ./src
-
-RUN npm run build
-
-# Production stage
-FROM node:20-alpine
-
+FROM node:20-alpine AS dev
 WORKDIR /app
-
-COPY package*.json ./
-
-RUN npm ci --only=production
-
-COPY --from=build /app/dist ./dist
-
+COPY --from=deps /dev_modules ./node_modules
+COPY . .
 EXPOSE 3000
+CMD ["sh", "-c", "npx prisma generate && npm run dev"]
 
-CMD ["node", "dist/index.js"]
+FROM node:20-alpine AS prod
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=deps /prod_modules ./node_modules
+COPY . .
+RUN npx prisma generate && npm run build
+EXPOSE 3000
+CMD ["npm", "start"]
