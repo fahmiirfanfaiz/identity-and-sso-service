@@ -78,9 +78,10 @@
                   "const json = (() => { try { return pm.response.json(); } catch(e) { return null; } })();",
                   "pm.test('Response status is 200', function () { pm.expect(pm.response.code).to.eql(200); });",
                   "if (json && json.data) {",
-                  "  const access = json.data.accessToken || '';",
-                  "  const refresh = json.data.refreshToken || '';",
-                  "  const uid = json.data.user && json.data.user.id ? json.data.user.id : '';",
+                  "  // support multiple possible response shapes: { data.accessToken } or { data.tokens.accessToken }",
+                  "  const access = (json.data.tokens && json.data.tokens.accessToken) || json.data.accessToken || json.accessToken || '';",
+                  "  const refresh = (json.data.tokens && json.data.tokens.refreshToken) || json.data.refreshToken || json.refreshToken || '';",
+                  "  const uid = (json.data.user && json.data.user.id) || json.data.userId || json.userId || '';",
                   "  if (access) pm.environment.set('accessToken', access);",
                   "  if (refresh) pm.environment.set('refreshToken', refresh);",
                   "  if (uid) pm.environment.set('userId', uid);",
@@ -247,9 +248,9 @@
                   "const json = (() => { try { return pm.response.json(); } catch(e) { return null; } })();",
                   "pm.test('Response status is 200', function () { pm.expect(pm.response.code).to.eql(200); });",
                   "if (json && json.data) {",
-                  "  const access = json.data.accessToken || '';",
-                  "  const refresh = json.data.refreshToken || '';",
-                  "  const uid = json.data.user && json.data.user.id ? json.data.user.id : '';",
+                  "  const access = (json.data.tokens && json.data.tokens.accessToken) || json.data.accessToken || json.accessToken || '';",
+                  "  const refresh = (json.data.tokens && json.data.tokens.refreshToken) || json.data.refreshToken || json.refreshToken || '';",
+                  "  const uid = (json.data.user && json.data.user.id) || json.data.userId || json.userId || '';",
                   "  if (access) pm.environment.set('adminAccessToken', access);",
                   "  if (refresh) pm.environment.set('adminRefreshToken', refresh);",
                   "  if (uid) pm.environment.set('adminUserId', uid);",
@@ -327,7 +328,24 @@
             },
             "description": "Mengambil profil user yang sedang login."
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = (() => { try { return pm.response.json(); } catch(e) { return null; } })();",
+                  "if (pm.response.code === 200) {",
+                  "  pm.test('Get Profile - status 200', () => pm.expect(pm.response.code).to.eql(200));",
+                  "  pm.test('Get Profile - has user data', () => pm.expect(json && json.data && json.data.user).to.exist);",
+                  "} else if (pm.response.code === 401) {",
+                  "  pm.test('Get Profile - Unauthorized message', () => pm.expect(json && json.message).to.be.oneOf(['Unauthorized: No token provided','Unauthorized: Invalid or expired token']));",
+                  "}"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Update Profile",
@@ -354,7 +372,24 @@
             },
             "description": "Memperbarui profil user yang sedang login."
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = (() => { try { return pm.response.json(); } catch(e) { return null; } })();",
+                  "if (pm.response.code === 200) {",
+                  "  pm.test('Update Profile - status 200', () => pm.expect(pm.response.code).to.eql(200));",
+                  "  pm.test('Update Profile - returned user id', () => pm.expect(json && json.data && json.data.user && json.data.user.id).to.exist);",
+                  "} else if (pm.response.code === 401) {",
+                  "  pm.test('Update Profile - Unauthorized message', () => pm.expect(json && json.message).to.be.oneOf(['Unauthorized: No token provided','Unauthorized: Invalid or expired token']));",
+                  "}"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
@@ -378,7 +413,22 @@
             },
             "description": "Endpoint internal untuk mengambil detail user berdasarkan ID."
           },
-          "response": []
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "type": "text/javascript",
+                  "exec": [
+                    "const json = (() => { try { return pm.response.json(); } catch(e) { return null; } })();",
+                    "pm.test('Get User by ID - status 200', () => pm.expect(pm.response.code).to.eql(200));",
+                    "if (json && json.data && json.data.user && json.data.user.id) {",
+                    "  pm.test('Get User by ID - id matches env.userId', () => pm.expect(json.data.user.id).to.eql(pm.environment.get('userId')));",
+                    "}"
+                  ]
+                }
+              }
+            ]
         },
         {
           "name": "Get Users",
@@ -397,7 +447,23 @@
             },
             "description": "Mengambil daftar user untuk sinkronisasi internal."
           },
-          "response": []
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "type": "text/javascript",
+                  "exec": [
+                    "const json = (() => { try { return pm.response.json(); } catch(e) { return null; } })();",
+                    "pm.test('Get Users - status 200', () => pm.expect(pm.response.code).to.eql(200));",
+                    "if (json && json.data && Array.isArray(json.data.users)) {",
+                    "  pm.test('Get Users - users array present', () => pm.expect(Array.isArray(json.data.users)).to.be.true);",
+                    "  if (!pm.environment.get('userId') && json.data.users.length > 0) { pm.environment.set('userId', json.data.users[0].id); }",
+                    "}"
+                  ]
+                }
+              }
+            ]
         },
         {
           "name": "Validate Token",
@@ -457,7 +523,20 @@
             },
             "description": "Mengambil audit logs dengan filter opsional."
           },
-          "response": []
+            "response": [],
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "type": "text/javascript",
+                  "exec": [
+                    "const json = (() => { try { return pm.response.json(); } catch(e) { return null; } })();",
+                    "pm.test('Audit Logs - status 200', () => pm.expect(pm.response.code).to.eql(200));",
+                    "if (json && json.data) { pm.test('Audit Logs - logs array present', () => pm.expect(Array.isArray(json.data.logs)).to.be.true); }"
+                  ]
+                }
+              }
+            ]
         }
       ]
     }

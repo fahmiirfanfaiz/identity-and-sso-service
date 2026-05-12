@@ -8,6 +8,53 @@ Dokumen ini adalah inventory lengkap semua endpoint yang direncanakan, sedang di
 
 ---
 
+## Catatan Hasil Test Manual
+
+Bagian ini merangkum hasil verifikasi manual yang sudah dilakukan di local server (`http://localhost:3000`) dengan Postman/curl. Fokus utama saat ini adalah **Test Group 2: Error Cases** supaya dokumentasi mengikuti perilaku runtime yang benar-benar aktif di code.
+
+### Test Group 2 - Authentication Error Cases
+
+#### 2.1 Login dengan kredensial salah
+
+- **Endpoint**: `POST /api/auth/login`
+- **Status**: `401 Unauthorized`
+- **Message hasil runtime**: `Invalid credentials or account is inactive`
+- **Sumber logika**: `src/services/auth.service.ts`
+
+Catatan:
+- Validasi body tetap berjalan lebih dulu. Jika payload JSON tidak valid, server akan membalas `400 Bad Request` dari parser middleware.
+- Jika email tidak ditemukan, user nonaktif, password salah, atau password belum tersedia, response yang konsisten adalah `401 Unauthorized` dengan message di atas.
+
+#### 2.2 Akses profile tanpa token
+
+- **Endpoint**: `GET /api/auth/profile`
+- **Status**: `401 Unauthorized`
+- **Message hasil runtime**: `Unauthorized: No token provided`
+- **Sumber logika**: `src/middlewares/authenticate.ts`
+
+#### 2.3 Akses profile dengan token invalid atau expired
+
+- **Endpoint**: `GET /api/auth/profile`
+- **Status**: `401 Unauthorized`
+- **Message hasil runtime**: `Unauthorized: Invalid or expired token`
+- **Sumber logika**: `src/middlewares/authenticate.ts`
+
+#### 2.4 Rate limit login
+
+- **Endpoint**: `POST /api/auth/login`
+- **Limiter**: `10 request / 15 menit` per IP
+- **Status saat limit terlampaui**: `429 Too Many Requests`
+- **Message hasil runtime**: `Too many requests, please try again later`
+- **Field tambahan**: `retryAfter` dalam detik
+- **Sumber logika**: `src/middlewares/rateLimit.ts`
+
+Catatan:
+- Rate limit dihitung berdasarkan IP address.
+- Jika Redis aktif, counter akan mengikuti window 15 menit dan kembali tersedia setelah TTL habis.
+- Untuk pengujian ulang, key limiter perlu dibersihkan atau menunggu window berakhir.
+
+---
+
 ## Ringkasan Endpoint
 
 | Kategori | Endpoint | Method | Status | Prioritas |

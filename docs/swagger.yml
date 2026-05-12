@@ -133,17 +133,24 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
-          description: Email atau password salah
+          description: Invalid credentials or account is inactive
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
               example:
                 success: false
-                message: Email atau password salah
-                errors:
-                  - email
-                  - password
+                message: Invalid credentials or account is inactive
+        '429':
+          description: Too many requests (rate limit exceeded)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: Too many requests, please try again later
+                retryAfter: 900
 
   /api/auth/google:
     post:
@@ -305,11 +312,14 @@ paths:
               schema:
                 $ref: '#/components/schemas/ProfileResponse'
         '401':
-          description: Token tidak valid atau sudah expired
+          description: Unauthorized (no token provided or token invalid/expired)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                message: Unauthorized: No token provided
 
     put:
       tags:
