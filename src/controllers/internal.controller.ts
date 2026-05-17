@@ -60,4 +60,30 @@ export const internalController = {
       next(error);
     }
   },
+
+  async createProjectCompletion(req: Request, res: Response, next: NextFunction) {
+    try {
+      const completion = await internalService.createProjectCompletion(req.body);
+      return res.status(201).json({
+        success: true,
+        message: "Project completion recorded",
+        data: { completion },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async listProjectCompletions(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await internalService.listProjectCompletions(String(req.params.talentId));
+      return res.status(200).json({
+        success: true,
+        message: "Project completions retrieved",
+        data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
 };

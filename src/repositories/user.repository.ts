@@ -9,6 +9,16 @@ export const userRepository = {
   findById: (id: string): Promise<User | null> =>
     prisma.user.findUnique({ where: { id } }),
 
+  findByIdWithProjectCompletions: (id: string) =>
+    prisma.user.findUnique({
+      where: { id },
+      include: {
+        projectCompletions: {
+          orderBy: { completionDate: "desc" },
+        },
+      },
+    }),
+
   create: (data: Prisma.UserCreateInput): Promise<User> =>
     prisma.user.create({ data }),
 

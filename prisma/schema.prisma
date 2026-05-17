@@ -21,23 +21,25 @@ enum AuditAction {
   REGISTER
   TOKEN_REFRESH
   USER_DEACTIVATED
+  PROJECT_COMPLETED
 }
 
 model User {
-  id             String             @id @default(uuid()) @db.Uuid
-  name           String
-  username       String?            @unique
-  email          String             @unique
-  password       String?
-  role           UserRole           @default(talent)
-  isActive       Boolean            @default(true) @map("is_active")
-  refreshTokens  RefreshToken[]
-  oauthAccounts  UserOAuthAccount[]
-  profile        UserProfile?
-  portfolios     Portfolio[]
-  skills         UsersSkill[]
-  createdAt      DateTime           @default(now()) @map("created_at")
-  updatedAt      DateTime           @updatedAt @map("updated_at")
+  id                 String                    @id @default(uuid()) @db.Uuid
+  name               String
+  username           String?                   @unique
+  email              String                    @unique
+  password           String?
+  role               UserRole                  @default(talent)
+  isActive           Boolean                   @default(true) @map("is_active")
+  refreshTokens      RefreshToken[]
+  oauthAccounts      UserOAuthAccount[]
+  profile            UserProfile?
+  portfolios         Portfolio[]
+  skills             UsersSkill[]
+  projectCompletions TalentProjectCompletion[]
+  createdAt          DateTime                  @default(now()) @map("created_at")
+  updatedAt          DateTime                  @updatedAt @map("updated_at")
 
   @@map("users")
 }
@@ -164,4 +166,21 @@ model UsersSkill {
   @@id([userId, skillId])
   @@index([skillId])
   @@map("users_skills")
+}
+
+model TalentProjectCompletion {
+  id             String   @id @default(uuid()) @db.Uuid
+  talentId       String   @map("talent_id") @db.Uuid
+  projectId      String   @map("project_id")
+  tokenId        String   @map("token_id")
+  ipfsUri        String   @map("ipfs_uri")
+  completionDate DateTime @map("completion_date")
+  talent         User     @relation(fields: [talentId], references: [id], onDelete: Cascade)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@unique([talentId, projectId])
+  @@index([talentId])
+  @@index([projectId])
+  @@map("talent_project_completions")
 }

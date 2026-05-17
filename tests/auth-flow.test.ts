@@ -402,6 +402,46 @@ describe("Internal endpoints", () => {
     expect(res.body.data.user.email).toBe(internalUserEmail);
   });
 
+  it("records and lists talent project completions", async () => {
+    const completionDate = new Date().toISOString();
+    const projectId = `project-${uniqueId}`;
+
+    const createRes = await request(app)
+      .post("/internal/project-completions")
+      .set("x-internal-api-key", internalApiKey)
+      .send({
+        talent_id: internalUserId,
+        project_id: projectId,
+        token_id: "12",
+        ipfs_uri: "ipfs://bafy-test-metadata",
+        completion_date: completionDate,
+      });
+
+    expect(createRes.status).toBe(201);
+    expect(createRes.body.data.completion).toMatchObject({
+      talentId: internalUserId,
+      projectId,
+      tokenId: "12",
+      ipfsUri: "ipfs://bafy-test-metadata",
+    });
+
+    const listRes = await request(app)
+      .get(`/internal/talents/${internalUserId}/project-completions`)
+      .set("x-internal-api-key", internalApiKey);
+
+    expect(listRes.status).toBe(200);
+    expect(listRes.body.data.completions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          talentId: internalUserId,
+          projectId,
+          tokenId: "12",
+          ipfsUri: "ipfs://bafy-test-metadata",
+        }),
+      ]),
+    );
+  });
+
   it("returns 404 for a non-existent user ID", async () => {
     const res = await request(app)
       .get("/internal/users/00000000-0000-0000-0000-000000000000")
@@ -807,5 +847,4 @@ describe("Audit logging", () => {
     expect(logs.every((l) => l.action === "LOGIN_SUCCESS")).toBe(true);
   });
 });
-
 

@@ -1,3 +1,4 @@
+import type { TalentProjectCompletion } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 import jwt from "jsonwebtoken";
@@ -37,6 +38,10 @@ type LoginInput = {
 type UpdateProfileInput = {
   name?: string;
   password?: string;
+};
+
+type ProfileResponse = SafeUser & {
+  projectCompletions: TalentProjectCompletion[];
 };
 
 const log = logAuditEvent;
@@ -166,12 +171,15 @@ export const authService = {
     await log({ action: "LOGOUT", userId, ...ctx });
   },
 
-  async getProfile(userId: string): Promise<SafeUser> {
-    const user = await userRepository.findById(userId);
+  async getProfile(userId: string): Promise<ProfileResponse> {
+    const user = await userRepository.findByIdWithProjectCompletions(userId);
     if (!user) {
       throw new NotFoundError("User not found");
     }
-    return stripPassword(user);
+    return {
+      ...stripPassword(user),
+      projectCompletions: user.projectCompletions,
+    };
   },
 
   async deactivateUser(
