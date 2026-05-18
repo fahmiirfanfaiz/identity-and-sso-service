@@ -33,6 +33,18 @@
       "enabled": true
     },
     {
+      "key": "defaultSkill",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "defaultSubSkill",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
       "key": "accessToken",
       "value": "",
       "type": "default",
@@ -70,6 +82,42 @@
     },
     {
       "key": "userId",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "projectCompletionTalentId",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "projectId",
+      "value": "sample-project-001",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "tokenId",
+      "value": "sample-token-001",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "ipfsUri",
+      "value": "ipfs://sample-completion-metadata",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "completionDate",
+      "value": "2026-05-18T00:00:00.000Z",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "projectCompletionId",
       "value": "",
       "type": "default",
       "enabled": true

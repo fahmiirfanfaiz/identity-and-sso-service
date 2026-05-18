@@ -41,6 +41,7 @@
                   "pm.test('Response status is 201', function () { pm.expect(pm.response.code).to.eql(201); });",
                   "if (json && json.data && json.data.user && json.data.user.id) {",
                   "  pm.environment.set('userId', json.data.user.id);",
+                  "  if (!pm.environment.get('projectCompletionTalentId')) { pm.environment.set('projectCompletionTalentId', json.data.user.id); }",
                   "}"
                 ]
               }
@@ -127,7 +128,10 @@
                   "  const uid = json.data.user && json.data.user.id ? json.data.user.id : '';",
                   "  if (access) pm.environment.set('accessToken', access);",
                   "  if (refresh) pm.environment.set('refreshToken', refresh);",
-                  "  if (uid) pm.environment.set('userId', uid);",
+                  "  if (uid) {",
+                  "    pm.environment.set('userId', uid);",
+                  "    if (!pm.environment.get('projectCompletionTalentId')) { pm.environment.set('projectCompletionTalentId', uid); }",
+                  "  }",
                   "}"
                 ]
               }
@@ -207,6 +211,41 @@
                   "pm.environment.unset('accessToken');",
                   "pm.environment.unset('refreshToken');",
                   "pm.test('Logout response status is 200', function () { pm.expect(pm.response.code).to.eql(200); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Reference Data",
+      "item": [
+        {
+          "name": "Get Skill Options",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/skills/options",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "skills", "options"]
+            },
+            "description": "Mengambil daftar skill dan sub-skill untuk validasi form."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = (() => { try { return pm.response.json(); } catch(e) { return null; } })();",
+                  "pm.test('Skill Options - status 200', () => pm.expect(pm.response.code).to.eql(200));",
+                  "pm.test('Skill Options - data exists', () => pm.expect(json && json.data).to.exist);",
+                  "pm.test('Skill Options - skills array exists', () => pm.expect(Array.isArray(json.data.skills)).to.be.true);",
+                  "pm.test('Skill Options - subSkills array exists', () => pm.expect(Array.isArray(json.data.subSkills)).to.be.true);",
+                  "if (json && json.data && json.data.skills && json.data.skills.length > 0) { pm.environment.set('defaultSkill', json.data.skills[0]); }",
+                  "if (json && json.data && json.data.subSkills && json.data.subSkills.length > 0) { pm.environment.set('defaultSubSkill', json.data.subSkills[0]); }"
                 ]
               }
             }
@@ -458,7 +497,12 @@
                     "pm.test('Get Users - status 200', () => pm.expect(pm.response.code).to.eql(200));",
                     "if (json && json.data && Array.isArray(json.data.users)) {",
                     "  pm.test('Get Users - users array present', () => pm.expect(Array.isArray(json.data.users)).to.be.true);",
-                    "  if (!pm.environment.get('userId') && json.data.users.length > 0) { pm.environment.set('userId', json.data.users[0].id); }",
+                    "  if (!pm.environment.get('userId') && json.data.users.length > 0) {",
+                    "    pm.environment.set('userId', json.data.users[0].id);",
+                    "  }",
+                    "  if (!pm.environment.get('projectCompletionTalentId') && json.data.users.length > 0) {",
+                    "    pm.environment.set('projectCompletionTalentId', json.data.users[0].id);",
+                    "  }",
                     "}"
                   ]
                 }
@@ -537,6 +581,78 @@
                 }
               }
             ]
+        },
+        {
+          "name": "Create Project Completion",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-internal-api-key",
+                "value": "{{internalApiKey}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/internal/project-completions",
+              "host": ["{{baseUrl}}"],
+              "path": ["internal", "project-completions"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"talent_id\": \"{{projectCompletionTalentId}}\",\n  \"project_id\": \"{{projectId}}\",\n  \"token_id\": \"{{tokenId}}\",\n  \"ipfs_uri\": \"{{ipfsUri}}\",\n  \"completion_date\": \"{{completionDate}}\"\n}"
+            },
+            "description": "Mencatat project completion untuk talent lewat internal API."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = (() => { try { return pm.response.json(); } catch(e) { return null; } })();",
+                  "pm.test('Create Project Completion - status 201', () => pm.expect(pm.response.code).to.eql(201));",
+                  "if (json && json.data && json.data.completion && json.data.completion.id) { pm.environment.set('projectCompletionId', json.data.completion.id); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Project Completions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-internal-api-key",
+                "value": "{{internalApiKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/internal/talents/{{projectCompletionTalentId}}/project-completions",
+              "host": ["{{baseUrl}}"],
+              "path": ["internal", "talents", "{{projectCompletionTalentId}}", "project-completions"]
+            },
+            "description": "Mengambil daftar project completion untuk talent tertentu."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = (() => { try { return pm.response.json(); } catch(e) { return null; } })();",
+                  "pm.test('List Project Completions - status 200', () => pm.expect(pm.response.code).to.eql(200));",
+                  "if (json && json.data) { pm.test('List Project Completions - completions array present', () => pm.expect(Array.isArray(json.data.completions)).to.be.true); }"
+                ]
+              }
+            }
+          ]
         }
       ]
     }
@@ -561,6 +677,14 @@
     {
       "key": "role",
       "value": "talent"
+    },
+    {
+      "key": "defaultSkill",
+      "value": ""
+    },
+    {
+      "key": "defaultSubSkill",
+      "value": ""
     },
     {
       "key": "googleIdToken",
@@ -592,6 +716,30 @@
     },
     {
       "key": "userId",
+      "value": ""
+    },
+    {
+      "key": "projectCompletionTalentId",
+      "value": ""
+    },
+    {
+      "key": "projectId",
+      "value": "sample-project-001"
+    },
+    {
+      "key": "tokenId",
+      "value": "sample-token-001"
+    },
+    {
+      "key": "ipfsUri",
+      "value": "ipfs://sample-completion-metadata"
+    },
+    {
+      "key": "completionDate",
+      "value": "2026-05-18T00:00:00.000Z"
+    },
+    {
+      "key": "projectCompletionId",
       "value": ""
     },
     {
