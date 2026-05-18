@@ -1,4 +1,4 @@
-postgresql://postgres.hywfsylphupzdysmwgvo:[YOUR-PASSWORD]@aws-1-ap-northeast-1.pooler.supabase.com:5432/postgres-- AlterTable
+-- AlterTable
 ALTER TABLE "users"
 ADD COLUMN "username" TEXT;
 
