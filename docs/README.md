@@ -4,7 +4,7 @@ Folder ini berisi dokumentasi lengkap untuk API Identity & SSO Service.
 
 ## File
 
-### `swagger.yml`
+### `openapi.yml`
 OpenAPI 3.0 specification untuk semua endpoint service.
 
 **Cara menggunakan:**
@@ -13,14 +13,14 @@ OpenAPI 3.0 specification untuk semua endpoint service.
 Buka di browser: https://editor.swagger.io/
 
 Lalu:
-1. Pilih **File** → **Import File** → pilih `swagger.yml`
-2. Atau copy-paste isi `swagger.yml` ke editor
+1. Pilih **File** → **Import File** → pilih `openapi.yml`
+2. Atau copy-paste isi `openapi.yml` ke editor
 
 #### 2. Swagger UI (Local dengan Docker)
 ```bash
 docker run -p 8080:8080 \
   -v $(pwd)/docs:/data \
-  -e SWAGGER_FILE=/data/swagger.yml \
+  -e SWAGGER_FILE=/data/openapi.yml \
   swaggerapi/swagger-ui
 ```
 Lalu buka: http://localhost:8080
@@ -29,15 +29,15 @@ Lalu buka: http://localhost:8080
 ```bash
 docker run -p 8080:8080 \
   -v $(pwd)/docs:/data \
-  -e SPEC_URL=/data/swagger.yml \
+  -e SPEC_URL=/data/openapi.yml \
   redocly/redoc
 ```
 Lalu buka: http://localhost:8080
 
 #### 4. Di Postman
 1. Buka Postman
-2. **File** → **Import** → **Link** → paste URL ke `swagger.yml`
-3. Atau **File** → **Import** → **Upload File** → pilih `swagger.yml`
+2. **File** → **Import** → **Link** → paste URL ke `openapi.yml`
+3. Atau **File** → **Import** → **Upload File** → pilih `openapi.yml`
 
 #### 5. Akun Uji Postman
 Gunakan akun ini untuk testing login dan endpoint protected:
@@ -78,7 +78,7 @@ Jika kamu memakai Postman environment, simpan variabel berikut:
 
 ## Testing dengan Swagger UI
 
-1. Buka `swagger.yml` di Swagger Editor
+1. Buka `openapi.yml` di Swagger Editor
 2. Klik endpoint yang ingin ditest
 3. Klik **Try it out**
 4. Isi request body / parameter
@@ -91,14 +91,14 @@ Jika kamu memakai Postman environment, simpan variabel berikut:
 
 ## Postman Collection
 
-File `postman-collection.json` dan `postman-environment.json` sudah disiapkan untuk memudahkan pengujian.
+File `automation-postman-collection.json` dan `automation-postman-environment.json` sudah disiapkan untuk memudahkan pengujian.
 
 Langkah singkat menjalankan di Postman:
 
 1. Impor environment terlebih dahulu:
-  - Postman → Import → pilih `postman-environment.json`
+  - Postman → Import → pilih `automation-postman-environment.json`
 2. Impor collection:
-  - Postman → Import → pilih `postman-collection.json`
+  - Postman → Import → pilih `automation-postman-collection.json`
 3. Pilih environment yang baru di kanan-atas (dropdown environment)
 4. Buka `Authentication -> Login User` → klik Send
 5. Buka ikon mata (Environment quick look) untuk memastikan `accessToken` dan `refreshToken` sudah terisi

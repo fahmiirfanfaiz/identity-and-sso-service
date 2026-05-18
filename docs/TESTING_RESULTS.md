@@ -176,7 +176,7 @@ Notes: `retryAfter` is calculated from Redis TTL and returned in seconds.
 
 - `ENDPOINTS.md` contains concise, human-friendly summaries per endpoint; detailed reproductions and raw responses live in this file (`docs/TESTING_RESULTS.md`) to keep `ENDPOINTS.md` readable while preserving a source of truth for QA and Swagger updates.
 - Actionable next steps:
-  - Update `docs/swagger.yml` response examples for the affected endpoints with the verified JSON examples above.
+  - Update `docs/openapi.yml` response examples for the affected endpoints with the verified JSON examples above.
   - Proceed to Test Group 3 (Admin + Internal) and capture its responses in this same document.
 
   ---
