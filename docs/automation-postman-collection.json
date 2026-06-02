@@ -1,16 +1,55 @@
 {
   "info": {
-    "name": "Identity & SSO - API Collection",
-    "description": "Postman collection untuk testing endpoint Identity & SSO Service berdasarkan docs/openapi.yml.",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "version": "1.0.0"
+    "name": "Bidding Capstone - FINAL COMPLETE",
+    "description": "Koleksi Postman Final. Mencakup 100% endpoint (System, Public Auth, Protected Auth, Admin, dan Internal API).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
-      "name": "Authentication",
+      "name": "1. System",
       "item": [
         {
-          "name": "Register User",
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/health",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Public Auth",
+      "item": [
+        {
+          "name": "Get Skill Options",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{BASE_URL}}/api/auth/skills/options",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "skills",
+                "options"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Register - Role Talent",
           "request": {
             "method": "POST",
             "header": [
@@ -20,28 +59,153 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/auth/register",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "register"]
+              "raw": "{{BASE_URL}}/api/auth/register",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"{{name}}\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"role\": \"{{role}}\"\n}"
-            },
-            "description": "Mendaftarkan user baru untuk testing lokal."
+              "raw": "{\n  \"name\": \"Talent Master\",\n  \"email\": \"talent{{$timestamp}}@test.com\",\n  \"password\": \"Password@123\",\n  \"role\": \"talent\",\n  \"skills\": [\n    \"FRONTEND_DEVELOPMENT\"\n  ],\n  \"subSkills\": [\n    \"REACT\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           },
-          "response": [],
           "event": [
             {
               "listen": "test",
               "script": {
-                "type": "text/javascript",
                 "exec": [
-                  "const json = (() => { try { return pm.response.json(); } catch(e) { return null; } })();",
-                  "pm.test('Response status is 201', function () { pm.expect(pm.response.code).to.eql(201); });",
-                  "if (json && json.data && json.data.user && json.data.user.id) {",
-                  "  pm.environment.set('userId', json.data.user.id);",
-                  "  if (!pm.environment.get('projectCompletionTalentId')) { pm.environment.set('projectCompletionTalentId', json.data.user.id); }",
+                  "var jsonData = pm.response.json();",
+                  "if(jsonData.success) { pm.environment.set('talent_email', jsonData.data.user.email); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Register - Role Client",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/auth/register",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"PT Maju Terus\",\n  \"email\": \"client{{$timestamp}}@perusahaan.com\",\n  \"password\": \"Password@123\",\n  \"role\": \"client\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if(jsonData.success) { pm.environment.set('client_email', jsonData.data.user.email); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Register - Error Invalid",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/auth/register",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Salah\",\n  \"email\": \"bukan-email\",\n  \"password\": \"123\",\n  \"role\": \"talent\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Login - Role Talent",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/auth/login",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{talent_email}}\",\n  \"password\": \"Password@123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if(jsonData.success) {",
+                  "  pm.environment.set('accessToken', jsonData.data.accessToken);",
+                  "  pm.environment.set('refreshToken', jsonData.data.refreshToken);",
                   "}"
                 ]
               }
@@ -49,7 +213,7 @@
           ]
         },
         {
-          "name": "Login User",
+          "name": "Login - Password Salah",
           "request": {
             "method": "POST",
             "header": [
@@ -59,84 +223,26 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/auth/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "login"]
+              "raw": "{{BASE_URL}}/api/auth/login",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
-            },
-            "description": "Login user dan simpan accessToken / refreshToken ke environment."
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const json = (() => { try { return pm.response.json(); } catch(e) { return null; } })();",
-                  "pm.test('Response status is 200', function () { pm.expect(pm.response.code).to.eql(200); });",
-                  "if (json && json.data) {",
-                  "  // support multiple possible response shapes: { data.accessToken } or { data.tokens.accessToken }",
-                  "  const access = (json.data.tokens && json.data.tokens.accessToken) || json.data.accessToken || json.accessToken || '';",
-                  "  const refresh = (json.data.tokens && json.data.tokens.refreshToken) || json.data.refreshToken || json.refreshToken || '';",
-                  "  const uid = (json.data.user && json.data.user.id) || json.data.userId || json.userId || '';",
-                  "  if (access) pm.environment.set('accessToken', access);",
-                  "  if (refresh) pm.environment.set('refreshToken', refresh);",
-                  "  if (uid) pm.environment.set('userId', uid);",
-                  "}"
-                ]
+              "raw": "{\n  \"email\": \"{{talent_email}}\",\n  \"password\": \"Salah\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
               }
             }
-          ]
-        },
-        {
-          "name": "Google Login",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/auth/google",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "google"]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"idToken\": \"{{googleIdToken}}\"\n}"
-            },
-            "description": "Login menggunakan Google ID token."
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const json = (() => { try { return pm.response.json(); } catch(e) { return null; } })();",
-                  "pm.test('Response status is 200', function () { pm.expect(pm.response.code).to.eql(200); });",
-                  "if (json && json.data) {",
-                  "  const access = json.data.accessToken || '';",
-                  "  const refresh = json.data.refreshToken || '';",
-                  "  const uid = json.data.user && json.data.user.id ? json.data.user.id : '';",
-                  "  if (access) pm.environment.set('accessToken', access);",
-                  "  if (refresh) pm.environment.set('refreshToken', refresh);",
-                  "  if (uid) {",
-                  "    pm.environment.set('userId', uid);",
-                  "    if (!pm.environment.get('projectCompletionTalentId')) { pm.environment.set('projectCompletionTalentId', uid); }",
-                  "  }",
-                  "}"
-                ]
-              }
-            }
-          ]
+          }
         },
         {
           "name": "Refresh Token",
@@ -149,68 +255,33 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/auth/refresh",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "refresh"]
+              "raw": "{{BASE_URL}}/api/auth/refresh",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "refresh"
+              ]
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
-            },
-            "description": "Tukar refresh token menjadi access token baru."
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const json = (() => { try { return pm.response.json(); } catch(e) { return null; } })();",
-                  "pm.test('Response status is 200', function () { pm.expect(pm.response.code).to.eql(200); });",
-                  "if (json && json.data && json.data.accessToken) {",
-                  "  pm.environment.set('accessToken', json.data.accessToken);",
-                  "}"
-                ]
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
               }
             }
-          ]
-        },
-        {
-          "name": "Logout",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/auth/logout",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "logout"]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
-            },
-            "description": "Logout user dan hapus refresh token."
           },
-          "response": [],
           "event": [
             {
               "listen": "test",
               "script": {
-                "type": "text/javascript",
                 "exec": [
-                  "pm.environment.unset('accessToken');",
-                  "pm.environment.unset('refreshToken');",
-                  "pm.test('Logout response status is 200', function () { pm.expect(pm.response.code).to.eql(200); });"
+                  "var jsonData = pm.response.json();",
+                  "if(jsonData.success) { pm.environment.set('accessToken', jsonData.data.accessToken); }"
                 ]
               }
             }
@@ -219,136 +290,7 @@
       ]
     },
     {
-      "name": "Reference Data",
-      "item": [
-        {
-          "name": "Get Skill Options",
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{baseUrl}}/api/auth/skills/options",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "skills", "options"]
-            },
-            "description": "Mengambil daftar skill dan sub-skill untuk validasi form."
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const json = (() => { try { return pm.response.json(); } catch(e) { return null; } })();",
-                  "pm.test('Skill Options - status 200', () => pm.expect(pm.response.code).to.eql(200));",
-                  "pm.test('Skill Options - data exists', () => pm.expect(json && json.data).to.exist);",
-                  "pm.test('Skill Options - skills array exists', () => pm.expect(Array.isArray(json.data.skills)).to.be.true);",
-                  "pm.test('Skill Options - subSkills array exists', () => pm.expect(Array.isArray(json.data.subSkills)).to.be.true);",
-                  "if (json && json.data && json.data.skills && json.data.skills.length > 0) { pm.environment.set('defaultSkill', json.data.skills[0]); }",
-                  "if (json && json.data && json.data.subSkills && json.data.subSkills.length > 0) { pm.environment.set('defaultSubSkill', json.data.subSkills[0]); }"
-                ]
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Administration",
-      "item": [
-        {
-          "name": "Login Admin",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/auth/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "login"]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
-            },
-            "description": "Login admin dan simpan token admin ke environment."
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const json = (() => { try { return pm.response.json(); } catch(e) { return null; } })();",
-                  "pm.test('Response status is 200', function () { pm.expect(pm.response.code).to.eql(200); });",
-                  "if (json && json.data) {",
-                  "  const access = (json.data.tokens && json.data.tokens.accessToken) || json.data.accessToken || json.accessToken || '';",
-                  "  const refresh = (json.data.tokens && json.data.tokens.refreshToken) || json.data.refreshToken || json.refreshToken || '';",
-                  "  const uid = (json.data.user && json.data.user.id) || json.data.userId || json.userId || '';",
-                  "  if (access) pm.environment.set('adminAccessToken', access);",
-                  "  if (refresh) pm.environment.set('adminRefreshToken', refresh);",
-                  "  if (uid) pm.environment.set('adminUserId', uid);",
-                  "}"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Register Admin",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{adminAccessToken}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/auth/register/admin",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "register", "admin"]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"{{name}}\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"role\": \"admin\"\n}"
-            },
-            "description": "Registrasi admin baru via admin access token."
-          },
-          "response": []
-        },
-        {
-          "name": "Deactivate User",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{adminAccessToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/auth/users/{{targetUserId}}/deactivate",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "users", "{{targetUserId}}", "deactivate"]
-            },
-            "description": "Menonaktifkan user lain dari akun admin."
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Protected",
+      "name": "3. Protected Auth & Admin",
       "item": [
         {
           "name": "Get Profile",
@@ -361,30 +303,17 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/auth/profile",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "profile"]
-            },
-            "description": "Mengambil profil user yang sedang login."
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const json = (() => { try { return pm.response.json(); } catch(e) { return null; } })();",
-                  "if (pm.response.code === 200) {",
-                  "  pm.test('Get Profile - status 200', () => pm.expect(pm.response.code).to.eql(200));",
-                  "  pm.test('Get Profile - has user data', () => pm.expect(json && json.data && json.data.user).to.exist);",
-                  "} else if (pm.response.code === 401) {",
-                  "  pm.test('Get Profile - Unauthorized message', () => pm.expect(json && json.message).to.be.oneOf(['Unauthorized: No token provided','Unauthorized: Invalid or expired token']));",
-                  "}"
-                ]
-              }
+              "raw": "{{BASE_URL}}/api/auth/profile",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "profile"
+              ]
             }
-          ]
+          }
         },
         {
           "name": "Update Profile",
@@ -392,122 +321,196 @@
             "method": "PUT",
             "header": [
               {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              },
-              {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/auth/profile",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "profile"]
+              "raw": "{{BASE_URL}}/api/auth/profile",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "profile"
+              ]
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Updated User\",\n  \"password\": \"new_secure_password_123\"\n}"
+              "raw": "{\n  \"name\": \"Nama Baru\",\n  \"skills\": [\n    \"BACKEND_DEVELOPMENT\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Admin Register (Butuh Token Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/auth/register/admin",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register",
+                "admin"
+              ]
             },
-            "description": "Memperbarui profil user yang sedang login."
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"New Admin\",\n  \"email\": \"admin{{$timestamp}}@capstone.test\",\n  \"password\": \"AdminPass@123\",\n  \"role\": \"admin\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Admin Deactivate User",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/auth/users/{{target_user_id}}/deactivate",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "users",
+                "{{target_user_id}}",
+                "deactivate"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/api/auth/logout",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Internal API",
+      "item": [
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-internal-api-key",
+                "value": "{{INTERNAL_API_KEY}}"
+              }
+            ],
+            "url": {
+              "raw": "{{BASE_URL}}/internal/users",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "internal",
+                "users"
+              ]
+            }
           },
-          "response": [],
           "event": [
             {
               "listen": "test",
               "script": {
-                "type": "text/javascript",
                 "exec": [
-                  "const json = (() => { try { return pm.response.json(); } catch(e) { return null; } })();",
-                  "if (pm.response.code === 200) {",
-                  "  pm.test('Update Profile - status 200', () => pm.expect(pm.response.code).to.eql(200));",
-                  "  pm.test('Update Profile - returned user id', () => pm.expect(json && json.data && json.data.user && json.data.user.id).to.exist);",
-                  "} else if (pm.response.code === 401) {",
-                  "  pm.test('Update Profile - Unauthorized message', () => pm.expect(json && json.message).to.be.oneOf(['Unauthorized: No token provided','Unauthorized: Invalid or expired token']));",
+                  "var jsonData = pm.response.json();",
+                  "if(jsonData.success && jsonData.data.users.length > 0) {",
+                  "  pm.environment.set('target_user_id', jsonData.data.users[0].id);",
                   "}"
                 ]
               }
             }
           ]
-        }
-      ]
-    },
-    {
-      "name": "Internal",
-      "item": [
-        {
-          "name": "Get User by ID",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "x-internal-api-key",
-                "value": "{{internalApiKey}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/internal/users/{{userId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["internal", "users", "{{userId}}"]
-            },
-            "description": "Endpoint internal untuk mengambil detail user berdasarkan ID."
-          },
-            "response": [],
-            "event": [
-              {
-                "listen": "test",
-                "script": {
-                  "type": "text/javascript",
-                  "exec": [
-                    "const json = (() => { try { return pm.response.json(); } catch(e) { return null; } })();",
-                    "pm.test('Get User by ID - status 200', () => pm.expect(pm.response.code).to.eql(200));",
-                    "if (json && json.data && json.data.user && json.data.user.id) {",
-                    "  pm.test('Get User by ID - id matches env.userId', () => pm.expect(json.data.user.id).to.eql(pm.environment.get('userId')));",
-                    "}"
-                  ]
-                }
-              }
-            ]
         },
         {
-          "name": "Get Users",
+          "name": "Get User By ID",
           "request": {
             "method": "GET",
             "header": [
               {
                 "key": "x-internal-api-key",
-                "value": "{{internalApiKey}}"
+                "value": "{{INTERNAL_API_KEY}}"
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/internal/users",
-              "host": ["{{baseUrl}}"],
-              "path": ["internal", "users"]
-            },
-            "description": "Mengambil daftar user untuk sinkronisasi internal."
-          },
-            "response": [],
-            "event": [
-              {
-                "listen": "test",
-                "script": {
-                  "type": "text/javascript",
-                  "exec": [
-                    "const json = (() => { try { return pm.response.json(); } catch(e) { return null; } })();",
-                    "pm.test('Get Users - status 200', () => pm.expect(pm.response.code).to.eql(200));",
-                    "if (json && json.data && Array.isArray(json.data.users)) {",
-                    "  pm.test('Get Users - users array present', () => pm.expect(Array.isArray(json.data.users)).to.be.true);",
-                    "  if (!pm.environment.get('userId') && json.data.users.length > 0) {",
-                    "    pm.environment.set('userId', json.data.users[0].id);",
-                    "  }",
-                    "  if (!pm.environment.get('projectCompletionTalentId') && json.data.users.length > 0) {",
-                    "    pm.environment.set('projectCompletionTalentId', json.data.users[0].id);",
-                    "  }",
-                    "}"
-                  ]
-                }
-              }
-            ]
+              "raw": "{{BASE_URL}}/internal/users/{{target_user_id}}",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "internal",
+                "users",
+                "{{target_user_id}}"
+              ]
+            }
+          }
         },
         {
           "name": "Validate Token",
@@ -520,67 +523,51 @@
               },
               {
                 "key": "x-internal-api-key",
-                "value": "{{internalApiKey}}"
+                "value": "{{INTERNAL_API_KEY}}"
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/internal/validate-token",
-              "host": ["{{baseUrl}}"],
-              "path": ["internal", "validate-token"]
+              "raw": "{{BASE_URL}}/internal/validate-token",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "internal",
+                "validate-token"
+              ]
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"token\": \"{{accessToken}}\"\n}"
-            },
-            "description": "Validasi access token secara internal."
-          },
-          "response": []
+              "raw": "{\n  \"token\": \"{{accessToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
         },
         {
-          "name": "Audit Logs",
+          "name": "List Audit Logs",
           "request": {
             "method": "GET",
             "header": [
               {
                 "key": "x-internal-api-key",
-                "value": "{{internalApiKey}}"
+                "value": "{{INTERNAL_API_KEY}}"
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/internal/audit-logs?userId={{auditUserId}}&action={{auditAction}}&limit={{auditLimit}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["internal", "audit-logs"],
-              "query": [
-                {
-                  "key": "userId",
-                  "value": "{{auditUserId}}"
-                },
-                {
-                  "key": "action",
-                  "value": "{{auditAction}}"
-                },
-                {
-                  "key": "limit",
-                  "value": "{{auditLimit}}"
-                }
+              "raw": "{{BASE_URL}}/internal/audit-logs",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "internal",
+                "audit-logs"
               ]
-            },
-            "description": "Mengambil audit logs dengan filter opsional."
-          },
-            "response": [],
-            "event": [
-              {
-                "listen": "test",
-                "script": {
-                  "type": "text/javascript",
-                  "exec": [
-                    "const json = (() => { try { return pm.response.json(); } catch(e) { return null; } })();",
-                    "pm.test('Audit Logs - status 200', () => pm.expect(pm.response.code).to.eql(200));",
-                    "if (json && json.data) { pm.test('Audit Logs - logs array present', () => pm.expect(Array.isArray(json.data.logs)).to.be.true); }"
-                  ]
-                }
-              }
-            ]
+            }
+          }
         },
         {
           "name": "Create Project Completion",
@@ -588,183 +575,60 @@
             "method": "POST",
             "header": [
               {
-                "key": "x-internal-api-key",
-                "value": "{{internalApiKey}}"
-              },
-              {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "x-internal-api-key",
+                "value": "{{INTERNAL_API_KEY}}"
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/internal/project-completions",
-              "host": ["{{baseUrl}}"],
-              "path": ["internal", "project-completions"]
+              "raw": "{{BASE_URL}}/internal/project-completions",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "internal",
+                "project-completions"
+              ]
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"talent_id\": \"{{projectCompletionTalentId}}\",\n  \"project_id\": \"{{projectId}}\",\n  \"token_id\": \"{{tokenId}}\",\n  \"ipfs_uri\": \"{{ipfsUri}}\",\n  \"completion_date\": \"{{completionDate}}\"\n}"
-            },
-            "description": "Mencatat project completion untuk talent lewat internal API."
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const json = (() => { try { return pm.response.json(); } catch(e) { return null; } })();",
-                  "pm.test('Create Project Completion - status 201', () => pm.expect(pm.response.code).to.eql(201));",
-                  "if (json && json.data && json.data.completion && json.data.completion.id) { pm.environment.set('projectCompletionId', json.data.completion.id); }"
-                ]
+              "raw": "{\n  \"talent_id\": \"{{target_user_id}}\",\n  \"project_id\": \"PROJECT-12345\",\n  \"token_id\": \"NFT-999\",\n  \"ipfs_uri\": \"ipfs://QmHash\",\n  \"completion_date\": \"2026-05-18T10:00:00Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
               }
             }
-          ]
+          }
         },
         {
-          "name": "List Project Completions",
+          "name": "List Completions",
           "request": {
             "method": "GET",
             "header": [
               {
                 "key": "x-internal-api-key",
-                "value": "{{internalApiKey}}"
+                "value": "{{INTERNAL_API_KEY}}"
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/internal/talents/{{projectCompletionTalentId}}/project-completions",
-              "host": ["{{baseUrl}}"],
-              "path": ["internal", "talents", "{{projectCompletionTalentId}}", "project-completions"]
-            },
-            "description": "Mengambil daftar project completion untuk talent tertentu."
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "const json = (() => { try { return pm.response.json(); } catch(e) { return null; } })();",
-                  "pm.test('List Project Completions - status 200', () => pm.expect(pm.response.code).to.eql(200));",
-                  "if (json && json.data) { pm.test('List Project Completions - completions array present', () => pm.expect(Array.isArray(json.data.completions)).to.be.true); }"
-                ]
-              }
+              "raw": "{{BASE_URL}}/internal/talents/{{target_user_id}}/project-completions",
+              "host": [
+                "{{BASE_URL}}"
+              ],
+              "path": [
+                "internal",
+                "talents",
+                "{{target_user_id}}",
+                "project-completions"
+              ]
             }
-          ]
+          }
         }
       ]
-    }
-  ],
-  "variable": [
-    {
-      "key": "baseUrl",
-      "value": "http://localhost:3000"
-    },
-    {
-      "key": "email",
-      "value": "test@example.com"
-    },
-    {
-      "key": "password",
-      "value": "Password123!"
-    },
-    {
-      "key": "name",
-      "value": "Test User"
-    },
-    {
-      "key": "role",
-      "value": "talent"
-    },
-    {
-      "key": "defaultSkill",
-      "value": ""
-    },
-    {
-      "key": "defaultSubSkill",
-      "value": ""
-    },
-    {
-      "key": "googleIdToken",
-      "value": ""
-    },
-    {
-      "key": "refreshToken",
-      "value": ""
-    },
-    {
-      "key": "accessToken",
-      "value": ""
-    },
-    {
-      "key": "adminEmail",
-      "value": "admin@example.com"
-    },
-    {
-      "key": "adminPassword",
-      "value": "Password123!"
-    },
-    {
-      "key": "adminAccessToken",
-      "value": ""
-    },
-    {
-      "key": "adminRefreshToken",
-      "value": ""
-    },
-    {
-      "key": "userId",
-      "value": ""
-    },
-    {
-      "key": "projectCompletionTalentId",
-      "value": ""
-    },
-    {
-      "key": "projectId",
-      "value": "sample-project-001"
-    },
-    {
-      "key": "tokenId",
-      "value": "sample-token-001"
-    },
-    {
-      "key": "ipfsUri",
-      "value": "ipfs://sample-completion-metadata"
-    },
-    {
-      "key": "completionDate",
-      "value": "2026-05-18T00:00:00.000Z"
-    },
-    {
-      "key": "projectCompletionId",
-      "value": ""
-    },
-    {
-      "key": "adminUserId",
-      "value": ""
-    },
-    {
-      "key": "targetUserId",
-      "value": ""
-    },
-    {
-      "key": "internalApiKey",
-      "value": "change-this-internal-api-key"
-    },
-    {
-      "key": "auditUserId",
-      "value": ""
-    },
-    {
-      "key": "auditAction",
-      "value": "LOGIN_SUCCESS"
-    },
-    {
-      "key": "auditLimit",
-      "value": "20"
     }
   ]
 }
