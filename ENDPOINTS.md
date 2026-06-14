@@ -60,6 +60,7 @@ Catatan:
 | Kategori | Endpoint | Method | Status | Prioritas |
 |----------|----------|--------|--------|-----------|
 | Public | `/api/auth/register` | POST | planned | P0 |
+| Public | `/api/auth/skills/options` | GET | planned | P1 |
 | Public | `/api/auth/login` | POST | mock | P0 |
 | Public | `/api/auth/refresh` | POST | mock | P1 |
 | Protected | `/api/auth/logout` | POST | planned | P1 |
@@ -67,6 +68,8 @@ Catatan:
 | Protected | `/api/auth/profile` | PUT | planned | P1 |
 | Internal | `/internal/users/:id` | GET | planned | P1 |
 | Internal | `/internal/validate-token` | POST | planned | P2 |
+| Internal | `/internal/project-completions` | POST | new | P2 |
+| Internal | `/internal/talents/:id/project-completions` | GET | new | P2 |
 
 ---
 
@@ -120,6 +123,29 @@ Content-Type: application/json
 - Password minimal 8 karakter
 - Role hanya boleh `client`, `freelancer`, atau `admin` (admin hanya bisa dibuat oleh admin)
 - Name minimal 3 karakter
+
+---
+
+### 1.1 Get Skill Options
+**Status**: `planned`  
+**Priority**: P1  
+
+```http
+GET /api/auth/skills/options
+```
+
+**Response Success (200)**:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "skill": "Programming",
+      "subSkills": ["Frontend", "Backend"]
+    }
+  ]
+}
+```
 
 ---
 

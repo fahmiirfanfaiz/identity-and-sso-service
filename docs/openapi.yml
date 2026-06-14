@@ -77,7 +77,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RegisterResponse'
-        '400':
+        '422':
           description: Validasi input gagal
           content:
             application/json:
@@ -151,6 +151,37 @@ paths:
                 success: false
                 message: Too many requests, please try again later
                 retryAfter: 900
+
+  /api/auth/skills/options:
+    get:
+      tags:
+        - Authentication
+      summary: Get skill options
+      description: Mengambil daftar enumerasi data Skill dan SubSkill.
+      operationId: getSkillOptions
+      responses:
+        '200':
+          description: Skill options retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        skill:
+                          type: string
+                          example: "Programming"
+                        subSkills:
+                          type: array
+                          items:
+                            type: string
 
   /api/auth/google:
     post:
@@ -345,7 +376,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UpdateProfileResponse'
-        '400':
+        '422':
           description: Validasi input gagal
           content:
             application/json:
@@ -486,6 +517,55 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuditLogListResponse'
+
+  /internal/project-completions:
+    post:
+      tags:
+        - Internal
+      summary: Create project completion (internal)
+      description: Mencatat penyelesaian proyek untuk seorang talent.
+      operationId: createProjectCompletion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                talentId:
+                  type: string
+                  example: "uuid-talent"
+                projectId:
+                  type: string
+                  example: "uuid-project"
+      responses:
+        '201':
+          description: Project completion created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessage'
+
+  /internal/talents/{id}/project-completions:
+    get:
+      tags:
+        - Internal
+      summary: List project completions (internal)
+      description: Mengambil histori penyelesaian proyek untuk talent tertentu.
+      operationId: getTalentProjectCompletions
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Completions retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessMessage'
 
   /internal/validate-token:
     post:
